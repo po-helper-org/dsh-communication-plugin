@@ -23,9 +23,13 @@ if (options === null) {
   process.exit(1)
 }
 
-const chats = (env.WATCHED_CHATS ?? '').split(',').map((chat) => chat.trim()).filter((chat) => chat !== '')
-if (chats.length === 0) {
-  console.error('Пуст WATCHED_CHATS в .env: нечего собирать. Пример: WATCHED_CHATS=me,@команда')
+const list = (value) => (value ?? '').split(',').map((item) => item.trim()).filter((item) => item !== '')
+const chats = list(env.WATCHED_CHATS)
+const folders = list(env.WATCHED_FOLDERS)
+if (chats.length === 0 && folders.length === 0) {
+  console.error('Пусты WATCHED_FOLDERS и WATCHED_CHATS в .env: нечего собирать.')
+  console.error('Пример: WATCHED_FOLDERS=Стартапы   либо   WATCHED_CHATS=me,@команда')
+  console.error('Список папок: node bin/dialogs.mjs --folders')
   process.exit(1)
 }
 
@@ -49,13 +53,37 @@ try {
   store.setMeta('collector.lastError', '')
   console.log(`Вошли как ${me}`)
 
-  const resolved = await channel.resolve(chats)
+  // Папки — основной способ задать границу сбора: состав ведётся в самом Telegram.
+  // Отдельные чаты из WATCHED_CHATS добавляются к ним, а не заменяют их.
+  const resolved = new Map()
+  if (folders.length > 0) {
+    const fromFolders = await channel.resolveFolders(folders)
+    for (const [ref, message] of fromFolders.failed) console.error(`Папка «${ref}»: ${message}`)
+    for (const [id, ref] of fromFolders.chats) resolved.set(id, ref)
+    console.log(`Папки: ${folders.join(', ')} — ${fromFolders.chats.size} чатов`)
+  }
+  if (chats.length > 0) {
+    const fromChats = await channel.resolve(chats)
+    for (const [ref, message] of fromChats.failed) console.error(`Чат ${ref} пропущен: ${message}`)
+    for (const [id, ref] of fromChats.chats) resolved.set(id, ref)
+  }
+  if (resolved.size === 0) throw new Error('ни один чат из реестра не доступен')
   store.setMeta('collector.watching', [...resolved.values()].join(','))
-  console.log(`Отслеживаем: ${[...resolved.values()].join(', ')}`)
+  console.log(`Отслеживаем чатов: ${resolved.size}`)
+
+  // Отказ фонового цикла по одному чату не должен останавливать сбор по остальным.
+  channel.onError((error) => {
+    const message = error instanceof Error ? error.message : String(error)
+    store.setMeta('collector.lastError', message)
+    console.error(`Ошибка потока: ${message}`)
+  })
 
   const collector = new Collector(store, channel, { delayBudgetMs: budgetMs })
   const before = store.count('inbox')
-  stop = await collector.start(resolved)
+  stop = await collector.start(resolved, (ref, message) => {
+    console.error(`Чтение ${ref} прервано: ${message}`)
+    store.setMeta('collector.lastError', `${ref}: ${message}`)
+  })
   const added = store.count('inbox') - before
   console.log(`Непрочитанное прочитано: ${added} новых заявок в Inbox. Слушаем поток, Ctrl+C — выход.`)
 } catch (error) {

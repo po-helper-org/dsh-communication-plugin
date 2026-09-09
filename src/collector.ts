@@ -134,9 +134,19 @@ export class Collector {
    * пришедшее в него, не попало бы никуда. Подписка, поднятая первой, это окно закрывает;
    * пересечение с догоном безвредно — дубли отсекает ключ заявки.
    */
-  async start(chats: ReadonlyMap<string, string>): Promise<() => void> {
+  async start(
+    chats: ReadonlyMap<string, string>,
+    onChatError?: (ref: string, message: string) => void,
+  ): Promise<() => void> {
     const unsubscribe = this.listen(new Set(chats.keys()))
-    for (const [chatId, ref] of chats) await this.catchUp(ref, chatId)
+    // Чтение изолировано по чатам: отказ по одному не отменяет остальные.
+    for (const [chatId, ref] of chats) {
+      try {
+        await this.catchUp(ref, chatId)
+      } catch (error) {
+        onChatError?.(ref, error instanceof Error ? error.message : String(error))
+      }
+    }
     return unsubscribe
   }
 

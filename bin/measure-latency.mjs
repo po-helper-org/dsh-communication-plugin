@@ -47,6 +47,9 @@ if (args.has('watch')) {
   const want = Number(args.get('count') ?? 5)
   const db = new DatabaseSync(dbPath)
   const seen = new Set(db.prepare('SELECT key FROM items').all().map((row) => row.key))
+  // Отсечка по времени отправки: заявки догона приходят сразу после старта, но они
+  // старые, и их «задержка» — возраст сообщения, а не скорость доставки.
+  const since = Date.now()
   console.log(`Жду новых заявок в ${dbPath}. Нужно ${want}. Отправляйте сообщения в отслеживаемый чат.`)
   console.log('Прервать — Ctrl+C.\n')
 
@@ -62,6 +65,7 @@ if (args.has('watch')) {
     for (const row of rows) {
       if (seen.has(row.key)) continue
       seen.add(row.key)
+      if (Number(row.sent_at) < since) continue
       const delta = Number(row.received_at) - Number(row.sent_at)
       samples.push(delta)
       const text = String(row.text ?? '').replace(/\s+/g, ' ').slice(0, 40)
