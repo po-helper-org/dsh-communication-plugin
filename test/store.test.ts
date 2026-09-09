@@ -4,6 +4,7 @@ import { Collector, toItem, extractLinks, type ChannelPort, type IncomingMessage
 import { InboxStore } from '../src/store.js'
 import { dispatch, type InboxPage } from '../src/channel.js'
 import { ItemNotFoundError } from '../src/errors.js'
+import { formatSummary, summarize } from '../src/latency.js'
 import type { CollectorStatus, Thread } from '../src/model.js'
 
 const NOW = 1_757_000_000_000
@@ -144,4 +145,17 @@ test('канал отдаёт список, карточку, разбор и н
   assert.equal(dispatch(store, status, 'ерунда', {}).ok, false)
   assert.equal(dispatch(store, status, 'show', {}).ok, false)
   store.close()
+})
+
+test('сводка по задержке считает перцентили по ближайшему рангу', () => {
+  const summary = summarize([1000, 2000, 3000, 4000, 400_000], 300_000)
+  assert.equal(summary.count, 5)
+  assert.equal(summary.min, 1000)
+  assert.equal(summary.p50, 3000)
+  assert.equal(summary.p90, 400_000)
+  assert.equal(summary.max, 400_000)
+  assert.equal(summary.overBudget, 1)
+  assert.equal(summarize([]).count, 0)
+  assert.match(formatSummary(summary, 'Транспорт'), /Транспорт: 5 замеров/)
+  assert.equal(formatSummary(summarize([]), 'Пусто'), 'Пусто: замеров нет')
 })
