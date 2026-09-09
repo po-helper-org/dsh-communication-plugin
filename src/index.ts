@@ -13,6 +13,7 @@ export { COMMUNICATION_CHANNEL, dispatch, type InboxPage, type RpcResult } from 
 export { TelegramChannel, telegramOptionsFromEnv, toIncoming, type TelegramOptions } from './telegram.js'
 export { Config, type PluginConfig } from './plugin-config.js'
 export { formatSummary, percentile, summarize, type LatencySummary } from './latency.js'
+export { mergeEnv, parseEnvFile, readEnvFile } from './env-file.js'
 
 // Харнесс грузит плагин по имени пакета, то есть через эту точку входа:
 // без `apply` и `name` композиция его просто не найдёт.

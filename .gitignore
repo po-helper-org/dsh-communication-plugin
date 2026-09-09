@@ -4,3 +4,4 @@ lib-test/
 *.db
 *.session*
 package-lock.json
+.env

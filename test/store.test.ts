@@ -4,6 +4,7 @@ import { Collector, toItem, extractLinks, type ChannelPort, type IncomingMessage
 import { InboxStore } from '../src/store.js'
 import { dispatch, type InboxPage } from '../src/channel.js'
 import { ItemNotFoundError } from '../src/errors.js'
+import { mergeEnv, parseEnvFile, readEnvFile } from '../src/env-file.js'
 import { formatSummary, summarize } from '../src/latency.js'
 import type { CollectorStatus, Thread } from '../src/model.js'
 
@@ -158,4 +159,29 @@ test('сводка по задержке считает перцентили п�
   assert.equal(summarize([]).count, 0)
   assert.match(formatSummary(summary, 'Транспорт'), /Транспорт: 5 замеров/)
   assert.equal(formatSummary(summarize([]), 'Пусто'), 'Пусто: замеров нет')
+})
+
+test('.env разбирается: кавычки, комментарии, export, мусорные строки', () => {
+  const parsed = parseEnvFile([
+    '# комментарий',
+    '',
+    'TG_API_ID=12345   # ключ приложения',
+    'export TG_API_HASH="ab#cd"',
+    "TG_SESSION='tg.session'",
+    'МУСОР без равенства',
+    'INBOX_DB = communication/inbox.db',
+  ].join('\n'))
+  assert.deepEqual(parsed, {
+    TG_API_ID: '12345',
+    TG_API_HASH: 'ab#cd',
+    TG_SESSION: 'tg.session',
+    INBOX_DB: 'communication/inbox.db',
+  })
+  assert.deepEqual(readEnvFile('/нет/такого/файла/.env'), {})
+})
+
+test('окружение процесса важнее файла, пустое значение файл не затирает', () => {
+  const merged = mergeEnv({ TG_API_ID: '1', TG_SESSION: 'из-файла' }, { TG_API_ID: '2', TG_SESSION: '' })
+  assert.equal(merged.TG_API_ID, '2')
+  assert.equal(merged.TG_SESSION, 'из-файла')
 })

@@ -9,6 +9,11 @@
 // Прогон требует готовой сессии (`node bin/login.mjs`) и работает от вашего аккаунта.
 import { DatabaseSync } from 'node:sqlite'
 import { formatSummary, summarize } from '../lib/latency.js'
+import { mergeEnv, readEnvFile } from '../lib/env-file.js'
+import { fileURLToPath } from 'node:url'
+
+// Переменные берутся из .env рядом с пакетом; заданные в строке запуска важнее файла.
+const env = mergeEnv(readEnvFile(fileURLToPath(new URL('../.env', import.meta.url))), process.env)
 
 const args = new Map()
 for (let i = 2; i < process.argv.length; i += 1) {
@@ -18,7 +23,7 @@ for (let i = 2; i < process.argv.length; i += 1) {
   args.set(arg.slice(2), next === undefined || next.startsWith('--') ? 'true' : next)
 }
 
-const dbPath = args.get('db') ?? 'inbox.db'
+const dbPath = args.get('db') ?? env.INBOX_DB ?? 'inbox.db'
 const budgetMs = Number(args.get('budget') ?? 300) * 1000
 
 if (args.has('report')) {
@@ -32,8 +37,8 @@ if (args.has('report')) {
 }
 
 const { TelegramClient } = await import('@mtcute/node')
-const apiId = Number(process.env.TG_API_ID)
-const apiHash = process.env.TG_API_HASH
+const apiId = Number(env.TG_API_ID)
+const apiHash = env.TG_API_HASH
 if (!Number.isFinite(apiId) || apiId <= 0 || !apiHash) {
   console.error('Нужны TG_API_ID и TG_API_HASH. Отчёт по уже собранному: --report --db <путь>')
   process.exit(1)
@@ -41,7 +46,7 @@ if (!Number.isFinite(apiId) || apiId <= 0 || !apiHash) {
 
 const chat = args.get('chat') ?? 'me'
 const count = Number(args.get('count') ?? 5)
-const client = new TelegramClient({ apiId, apiHash, storage: process.env.TG_SESSION ?? 'tg.session' })
+const client = new TelegramClient({ apiId, apiHash, storage: env.TG_SESSION ?? 'tg.session' })
 
 await client.connect()
 let me

@@ -5,10 +5,12 @@
  * Коллектор — не обязательное условие работы раздела: без сессии или без реестра чатов
  * раздел поднимается, показывает пустой Inbox и честно говорит в панели, чего не хватает.
  */
+import { fileURLToPath } from 'node:url'
 import { isAbsolute, join } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import { COMMUNICATION_CHANNEL, dispatch, type RpcResult } from './channel.js'
 import { Collector } from './collector.js'
+import { mergeEnv, readEnvFile } from './env-file.js'
 import { Config, type PluginConfig } from './plugin-config.js'
 import type { CollectorStatus } from './model.js'
 import { InboxStore } from './store.js'
@@ -26,6 +28,16 @@ interface ConnectionLike {
       options?: { authority?: string },
     ) => () => Promise<void> | void
   }
+}
+
+/**
+ * Файл с ключом Telegram. По умолчанию `.env` в каталоге пакета: собранный модуль лежит
+ * в `lib/`, поэтому корень пакета — на уровень выше.
+ */
+function resolveEnvPath(config: PluginConfig): string {
+  if (config.envFile === '') return fileURLToPath(new URL('../.env', import.meta.url))
+  if (isAbsolute(config.envFile) || config.workspaceRoot === '') return config.envFile
+  return join(config.workspaceRoot, config.envFile)
 }
 
 function resolveDbPath(config: PluginConfig): string {
@@ -61,9 +73,10 @@ export function apply(ctx: Context, config: PluginConfig): void {
 
   if (!status.configured) return
 
-  const options = telegramOptionsFromEnv(process.env)
+  const envPath = resolveEnvPath(config)
+  const options = telegramOptionsFromEnv(mergeEnv(readEnvFile(envPath), process.env))
   if (options === null) {
-    status.lastError = 'нет TG_API_ID и TG_API_HASH в окружении харнесса'
+    status.lastError = `нет TG_API_ID и TG_API_HASH: ни в окружении харнесса, ни в ${envPath}`
     return
   }
 
