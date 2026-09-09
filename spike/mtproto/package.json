@@ -1,0 +1,14 @@
+{
+  "name": "spike-mtproto",
+  "private": true,
+  "type": "module",
+  "description": "Спайк: сбор сообщений из личного аккаунта Telegram в локальный Inbox",
+  "scripts": {
+    "collect": "node collect.mjs",
+    "inbox": "node inbox.mjs",
+    "selftest": "node selftest.mjs"
+  },
+  "dependencies": {
+    "@mtcute/node": "^0.28.0"
+  }
+}

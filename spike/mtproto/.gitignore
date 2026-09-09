@@ -1,0 +1,4 @@
+node_modules/
+*.db
+*.session*
+package-lock.json
