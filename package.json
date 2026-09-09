@@ -36,7 +36,8 @@
   "scripts": {
     "build": "tsc && tsdown",
     "test": "tsc -p tsconfig.test.json && node --test lib-test/test/*.test.js",
-    "login": "node bin/login.mjs"
+    "login": "node bin/login.mjs",
+    "test:live": "npm run build && node --test test/live/*.test.mjs"
   },
   "dependencies": {
     "@mtcute/node": "^0.28.0"

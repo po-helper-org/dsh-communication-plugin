@@ -10,6 +10,7 @@ export {
   type IncomingMessage,
 } from './collector.js'
 export { COMMUNICATION_CHANNEL, dispatch, type InboxPage, type RpcResult } from './channel.js'
+export { HEARTBEAT_STALE_MS, readStatus } from './status.js'
 export { Config, type PluginConfig } from './plugin-config.js'
 
 // `telegram.js` намеренно не реэкспортируется: он тянет клиента с нативным модулем,
@@ -19,4 +20,4 @@ export { mergeEnv, parseEnvFile, readEnvFile } from './env-file.js'
 
 // Харнесс грузит плагин по имени пакета, то есть через эту точку входа:
 // без `apply` и `name` композиция его просто не найдёт.
-export { name, apply } from './plugin.js'
+export { name, apply, resolveDbPath } from './plugin.js'

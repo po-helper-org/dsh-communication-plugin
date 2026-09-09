@@ -12,14 +12,11 @@ import { isAbsolute, join } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import { COMMUNICATION_CHANNEL, dispatch, type RpcResult } from './channel.js'
 import { Config, type PluginConfig } from './plugin-config.js'
-import type { CollectorStatus } from './model.js'
+import { readStatus } from './status.js'
 import { InboxStore } from './store.js'
 
 export const name = 'dsh-communication-plugin'
 export { Config }
-
-/** Коллектор считается живым, если отметился в базе не позже этого срока. */
-const HEARTBEAT_STALE_MS = 2 * 60 * 1000
 
 /** Форма службы соединения, которой нам достаточно. */
 interface ConnectionLike {
@@ -32,26 +29,10 @@ interface ConnectionLike {
   }
 }
 
-function resolveDbPath(config: PluginConfig): string {
+export function resolveDbPath(config: PluginConfig): string {
   if (isAbsolute(config.dbPath)) return config.dbPath
   if (config.workspaceRoot === '') return config.dbPath
   return join(config.workspaceRoot, config.dbPath)
-}
-
-/** Состояние коллектора собирается из отметок, которые он оставляет в той же базе. */
-function readStatus(store: InboxStore, now: number): CollectorStatus {
-  const seenAt = Number(store.getMeta('collector.seenAt') ?? 0)
-  const watching = (store.getMeta('collector.watching') ?? '').split(',').filter((chat) => chat !== '')
-  const lastError = store.getMeta('collector.lastError')
-  const alive = seenAt > 0 && now - seenAt < HEARTBEAT_STALE_MS
-  return {
-    configured: watching.length > 0,
-    authorized: alive && store.getMeta('collector.authorized') === 'да',
-    watching,
-    lastError: alive
-      ? (lastError === '' ? null : lastError)
-      : 'коллектор не запущен: `node bin/collect.mjs` в каталоге плагина',
-  }
 }
 
 export function apply(ctx: Context, config: PluginConfig): void {
