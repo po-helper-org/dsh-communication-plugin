@@ -26,7 +26,10 @@ if (options === null) {
 const list = (value) => (value ?? '').split(',').map((item) => item.trim()).filter((item) => item !== '')
 const chats = list(env.WATCHED_CHATS)
 const folders = list(env.WATCHED_FOLDERS)
-if (chats.length === 0 && folders.length === 0) {
+// WATCH_PRIVATE=1 — принимать любые личные сообщения. Реестр при этом не обязателен:
+// правило отбора не требует ни одного запроса к Telegram, поэтому подписка встаёт сразу.
+const privateToo = env.WATCH_PRIVATE === '1'
+if (chats.length === 0 && folders.length === 0 && !privateToo) {
   console.error('Пусты WATCHED_FOLDERS и WATCHED_CHATS в .env: нечего собирать.')
   console.error('Пример: WATCHED_FOLDERS=Стартапы   либо   WATCHED_CHATS=me,@команда')
   console.error('Список папок: node bin/dialogs.mjs --folders')
@@ -67,7 +70,7 @@ try {
     for (const [ref, message] of fromChats.failed) console.error(`Чат ${ref} пропущен: ${message}`)
     for (const [id, ref] of fromChats.chats) resolved.set(id, ref)
   }
-  if (resolved.size === 0) throw new Error('ни один чат из реестра не доступен')
+  if (resolved.size === 0 && !privateToo) throw new Error('ни один чат из реестра не доступен')
   store.setMeta('collector.watching', [...resolved.values()].join(','))
   console.log(`Отслеживаем чатов: ${resolved.size}`)
 
@@ -80,10 +83,15 @@ try {
 
   const collector = new Collector(store, channel, { delayBudgetMs: budgetMs })
   const before = store.count('inbox')
-  stop = await collector.start(resolved, (ref, message) => {
-    console.error(`Чтение ${ref} прервано: ${message}`)
-    store.setMeta('collector.lastError', `${ref}: ${message}`)
-  })
+  if (privateToo) console.log('Личные сообщения принимаются из любых диалогов, включая новые')
+  stop = await collector.start(
+    resolved,
+    (ref, message) => {
+      console.error(`Чтение ${ref} прервано: ${message}`)
+      store.setMeta('collector.lastError', `${ref}: ${message}`)
+    },
+    privateToo ? (message) => message.chatKind === 'user' : undefined,
+  )
   const added = store.count('inbox') - before
   console.log(`Непрочитанное прочитано: ${added} новых заявок в Inbox. Слушаем поток, Ctrl+C — выход.`)
 } catch (error) {

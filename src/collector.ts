@@ -19,6 +19,8 @@ export interface IncomingMessage {
   text: string
   hasMedia: boolean
   isService: boolean
+  /** Тип собеседника: личка, группа или канал. Нужен правилам отбора, в заявку не идёт. */
+  chatKind?: 'user' | 'chat' | 'channel'
 }
 
 /** Порт клиента канала. Ровно две способности: прочитать историю и слушать поток. */
@@ -137,8 +139,12 @@ export class Collector {
   async start(
     chats: ReadonlyMap<string, string>,
     onChatError?: (ref: string, message: string) => void,
+    extra?: (message: IncomingMessage) => boolean,
   ): Promise<() => void> {
-    const unsubscribe = this.listen(new Set(chats.keys()))
+    const ids = new Set(chats.keys())
+    const unsubscribe = this.listen(
+      extra === undefined ? ids : (message) => ids.has(message.chatId) || extra(message),
+    )
     // Чтение изолировано по чатам: отказ по одному не отменяет остальные.
     for (const [chatId, ref] of chats) {
       try {
@@ -150,10 +156,18 @@ export class Collector {
     return unsubscribe
   }
 
-  /** Подписка на поток. Чаты вне реестра игнорируются. */
-  listen(watchedChatIds: ReadonlySet<string>): () => void {
+  /**
+   * Подписка на поток. Отбор — либо реестр идентификаторов, либо правило.
+   *
+   * Правило нужно там, где чата ещё нет в реестре по определению: личное сообщение
+   * с незнакомого аккаунта заводит новый диалог, и снимок реестра его не содержит.
+   */
+  listen(watched: ReadonlySet<string> | ((message: IncomingMessage) => boolean)): () => void {
+    const accepts = typeof watched === 'function'
+      ? watched
+      : (message: IncomingMessage) => watched.has(message.chatId)
     return this.port.subscribe((message) => {
-      if (!watchedChatIds.has(message.chatId)) return
+      if (!accepts(message)) return
       this.accept(message)
     })
   }

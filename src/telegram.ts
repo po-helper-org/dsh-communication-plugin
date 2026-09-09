@@ -31,7 +31,7 @@ interface MessageLike {
   isService: boolean
   text: string
   date: Date
-  chat: { id: number | string; displayName?: string }
+  chat: { id: number | string; displayName?: string; type?: 'user' | 'chat' | 'channel' }
   sender?: { id?: number | string; displayName?: string }
   media?: { type?: string } | null
 }
@@ -47,6 +47,7 @@ export function toIncoming(message: MessageLike): IncomingMessage {
     text: message.text,
     hasMedia: message.media != null && message.media.type !== 'unsupported',
     isService: message.isService,
+    chatKind: message.chat.type,
   }
 }
 
