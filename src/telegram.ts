@@ -32,7 +32,7 @@ interface MessageLike {
   text: string
   date: Date
   chat: { id: number | string; displayName?: string }
-  sender?: { displayName?: string }
+  sender?: { id?: number | string; displayName?: string }
   media?: { type?: string } | null
 }
 
@@ -42,6 +42,7 @@ export function toIncoming(message: MessageLike): IncomingMessage {
     chatId: String(message.chat.id),
     chatTitle: message.chat.displayName ?? null,
     author: message.sender?.displayName ?? null,
+    authorId: message.sender?.id === undefined ? null : String(message.sender.id),
     sentAt: message.date.getTime(),
     text: message.text,
     hasMedia: message.media != null && message.media.type !== 'unsupported',

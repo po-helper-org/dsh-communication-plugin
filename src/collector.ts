@@ -13,6 +13,7 @@ export interface IncomingMessage {
   chatId: string
   chatTitle: string | null
   author: string | null
+  authorId: string | null
   /** Время отправки в миллисекундах. */
   sentAt: number
   text: string
@@ -56,6 +57,7 @@ export function toItem(message: IncomingMessage, options: CollectorOptions & { r
     msgId: message.id,
     threadKey: `${channel}:${message.chatId}`,
     author: message.author,
+    authorId: message.authorId,
     sentAt: message.sentAt,
     receivedAt: options.receivedAt,
     delayed: options.receivedAt - message.sentAt > budget,

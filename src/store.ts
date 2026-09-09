@@ -19,6 +19,7 @@ const SCHEMA = `
     msg_id      INTEGER NOT NULL,
     thread_key  TEXT NOT NULL,
     author      TEXT,
+    author_id   TEXT,
     sent_at     INTEGER NOT NULL,
     received_at INTEGER NOT NULL,
     delayed     INTEGER NOT NULL DEFAULT 0,
@@ -44,6 +45,7 @@ interface Row {
   msg_id: number
   thread_key: string
   author: string | null
+  author_id: string | null
   sent_at: number
   received_at: number
   delayed: number
@@ -63,6 +65,7 @@ function toItem(row: Row): Item {
     msgId: Number(row.msg_id),
     threadKey: row.thread_key,
     author: row.author,
+    authorId: row.author_id,
     sentAt: Number(row.sent_at),
     receivedAt: Number(row.received_at),
     delayed: row.delayed === 1,
@@ -94,9 +97,21 @@ export class InboxStore {
       if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true })
       this.db = new DatabaseSync(path)
       this.db.exec(SCHEMA)
+      this.migrate()
     } catch (error) {
       throw new StoreUnavailableError(path, error instanceof Error ? error.message : String(error))
     }
+  }
+
+  /**
+   * Догоняет схему до текущей: база уже могла быть заведена прошлой версией раздела.
+   * Столбцы добавляются по одному и только отсутствующие — база владельца не пересоздаётся.
+   */
+  private migrate(): void {
+    const columns = new Set(
+      (this.db.prepare('PRAGMA table_info(items)').all() as Array<{ name: string }>).map((row) => row.name),
+    )
+    if (!columns.has('author_id')) this.db.exec('ALTER TABLE items ADD COLUMN author_id TEXT')
   }
 
   /**
@@ -105,13 +120,13 @@ export class InboxStore {
    */
   save(item: Item): boolean {
     const result = this.db.prepare(`
-      INSERT INTO items (key, channel, chat_id, chat_title, msg_id, thread_key, author,
+      INSERT INTO items (key, channel, chat_id, chat_title, msg_id, thread_key, author, author_id,
                          sent_at, received_at, delayed, text, has_media, links, state, class)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       ON CONFLICT(key) DO NOTHING
     `).run(
       item.key, item.channel, item.chatId, item.chatTitle, item.msgId, item.threadKey,
-      item.author, item.sentAt, item.receivedAt, item.delayed ? 1 : 0, item.text,
+      item.author, item.authorId, item.sentAt, item.receivedAt, item.delayed ? 1 : 0, item.text,
       item.hasMedia ? 1 : 0, item.links.length === 0 ? null : item.links.join('\n'),
       item.state, item.class,
     )

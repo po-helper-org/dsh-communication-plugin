@@ -15,6 +15,7 @@ function msg(id: number, text: string, minutesAgo = 0, extra: Partial<IncomingMe
     chatId: CHAT,
     chatTitle: 'Рабочий чат',
     author: 'Коллега',
+    authorId: '777',
     sentAt: NOW - minutesAgo * 60_000,
     text,
     hasMedia: false,
@@ -39,6 +40,20 @@ test('заявка появляется в состоянии inbox с пуст�
   assert.equal(item.state, 'inbox')
   assert.equal(item.class, null)
   assert.equal(item.key, `telegram:${CHAT}:1`)
+})
+
+test('внешние идентификаторы канала хранятся с самого начала', () => {
+  const item = toItem(msg(7, 'привет'), { receivedAt: NOW })
+  assert.equal(item.chatId, CHAT)
+  assert.equal(item.msgId, 7)
+  assert.equal(item.authorId, '777')
+})
+
+test('база прошлой версии догоняется без пересоздания', () => {
+  const store = new InboxStore(':memory:')
+  store.save(toItem(msg(1, 'первое'), { receivedAt: NOW }))
+  assert.equal(store.thread(`telegram:${CHAT}:1`).item.authorId, '777')
+  store.close()
 })
 
 test('догон пишет пропущенное и двигает курсор, повтор не создаёт дублей', async () => {
