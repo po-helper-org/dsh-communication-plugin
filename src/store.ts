@@ -31,6 +31,10 @@ const SCHEMA = `
   );
   CREATE INDEX IF NOT EXISTS items_state ON items(state, sent_at DESC);
   CREATE INDEX IF NOT EXISTS items_thread ON items(thread_key, msg_id);
+  CREATE TABLE IF NOT EXISTS meta (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
   CREATE TABLE IF NOT EXISTS cursors (
     chat_id     TEXT PRIMARY KEY,
     last_msg_id INTEGER NOT NULL
@@ -183,6 +187,20 @@ export class InboxStore {
     if (exists === undefined) throw new ItemNotFoundError(key)
     return this.db.prepare("UPDATE items SET state = 'разобрано' WHERE key = ? AND state = 'inbox'")
       .run(key).changes === 1
+  }
+
+  /**
+   * Состояние коллектора. Коллектор — отдельный процесс, поэтому раздел узнаёт о нём
+   * единственным доступным обоим способом: через ту же базу.
+   */
+  setMeta(key: string, value: string): void {
+    this.db.prepare('INSERT INTO meta (key, value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value = excluded.value')
+      .run(key, value)
+  }
+
+  getMeta(key: string): string | null {
+    const row = this.db.prepare('SELECT value FROM meta WHERE key = ?').get(key) as { value: string } | undefined
+    return row === undefined ? null : row.value
   }
 
   close(): void {

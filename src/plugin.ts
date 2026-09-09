@@ -1,23 +1,25 @@
 /**
  * Раздел «Управление коммуникацией», узловая половина.
  *
- * Поднимает хранилище заявок, канал RPC для панели и коллектор личного Telegram.
- * Коллектор — не обязательное условие работы раздела: без сессии или без реестра чатов
- * раздел поднимается, показывает пустой Inbox и честно говорит в панели, чего не хватает.
+ * Раздел только читает: хранилище заявок и канал RPC для панели. Сбор идёт отдельным
+ * процессом (`bin/collect.mjs`), и это не вкусовщина. Клиент Telegram тянет нативный
+ * модуль хранилища сессии, а несовместимый бинарь в процессе харнесса роняет весь
+ * харнесс целиком, а не свой раздел — проверено на живом стенде.
+ *
+ * Разделение заодно совпадает с принципом портов: раздел знает хранилище, а не канал.
  */
-import { fileURLToPath } from 'node:url'
 import { isAbsolute, join } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import { COMMUNICATION_CHANNEL, dispatch, type RpcResult } from './channel.js'
-import { Collector } from './collector.js'
-import { mergeEnv, readEnvFile } from './env-file.js'
 import { Config, type PluginConfig } from './plugin-config.js'
 import type { CollectorStatus } from './model.js'
 import { InboxStore } from './store.js'
-import { TelegramChannel, telegramOptionsFromEnv } from './telegram.js'
 
 export const name = 'dsh-communication-plugin'
 export { Config }
+
+/** Коллектор считается живым, если отметился в базе не позже этого срока. */
+const HEARTBEAT_STALE_MS = 2 * 60 * 1000
 
 /** Форма службы соединения, которой нам достаточно. */
 interface ConnectionLike {
@@ -30,31 +32,30 @@ interface ConnectionLike {
   }
 }
 
-/**
- * Файл с ключом Telegram. По умолчанию `.env` в каталоге пакета: собранный модуль лежит
- * в `lib/`, поэтому корень пакета — на уровень выше.
- */
-function resolveEnvPath(config: PluginConfig): string {
-  if (config.envFile === '') return fileURLToPath(new URL('../.env', import.meta.url))
-  if (isAbsolute(config.envFile) || config.workspaceRoot === '') return config.envFile
-  return join(config.workspaceRoot, config.envFile)
-}
-
 function resolveDbPath(config: PluginConfig): string {
   if (isAbsolute(config.dbPath)) return config.dbPath
   if (config.workspaceRoot === '') return config.dbPath
   return join(config.workspaceRoot, config.dbPath)
 }
 
+/** Состояние коллектора собирается из отметок, которые он оставляет в той же базе. */
+function readStatus(store: InboxStore, now: number): CollectorStatus {
+  const seenAt = Number(store.getMeta('collector.seenAt') ?? 0)
+  const watching = (store.getMeta('collector.watching') ?? '').split(',').filter((chat) => chat !== '')
+  const lastError = store.getMeta('collector.lastError')
+  const alive = seenAt > 0 && now - seenAt < HEARTBEAT_STALE_MS
+  return {
+    configured: watching.length > 0,
+    authorized: alive && store.getMeta('collector.authorized') === 'да',
+    watching,
+    lastError: alive
+      ? (lastError === '' ? null : lastError)
+      : 'коллектор не запущен: `node bin/collect.mjs` в каталоге плагина',
+  }
+}
+
 export function apply(ctx: Context, config: PluginConfig): void {
   const store = new InboxStore(resolveDbPath(config))
-  const status: CollectorStatus = {
-    configured: config.watchedChats.length > 0,
-    authorized: false,
-    watching: [],
-    lastError: config.watchedChats.length > 0 ? null : 'реестр отслеживаемых чатов пуст',
-  }
-
   ctx.effect(() => () => { store.close() }, 'dsh-communication-plugin: база заявок')
 
   // Служба соединения берётся отложенной инъекцией: композиция без веб-интерфейса
@@ -64,44 +65,12 @@ export function apply(ctx: Context, config: PluginConfig): void {
     scoped.effect(
       () => connection.rpc.handle(
         COMMUNICATION_CHANNEL,
-        (endpoint, payload) => Promise.resolve(dispatch(store, () => status, endpoint, payload)),
+        (endpoint, payload) => Promise.resolve(
+          dispatch(store, () => readStatus(store, Date.now()), endpoint, payload),
+        ),
         { authority: 'loopback' },
       ),
       'dsh-communication-plugin: канал /communication',
     )
   })
-
-  if (!status.configured) return
-
-  const envPath = resolveEnvPath(config)
-  const options = telegramOptionsFromEnv(mergeEnv(readEnvFile(envPath), process.env))
-  if (options === null) {
-    status.lastError = `нет TG_API_ID и TG_API_HASH: ни в окружении харнесса, ни в ${envPath}`
-    return
-  }
-
-  const channel = new TelegramChannel(options)
-  let unsubscribe: (() => void) | undefined
-
-  // Сбор запускается асинхронно и не задерживает подъём раздела: сеть может быть
-  // недоступна, а панель со списком уже собранного обязана открыться в любом случае.
-  void (async () => {
-    try {
-      await channel.open()
-      status.authorized = true
-      const chats = await channel.resolve(config.watchedChats)
-      status.watching = [...chats.values()]
-      const collector = new Collector(store, channel, { delayBudgetMs: config.delayBudgetSec * 1000 })
-      for (const ref of chats.values()) await collector.catchUp(ref)
-      unsubscribe = collector.listen(new Set(chats.keys()))
-      status.lastError = null
-    } catch (error) {
-      status.lastError = error instanceof Error ? error.message : String(error)
-    }
-  })()
-
-  ctx.effect(() => () => {
-    unsubscribe?.()
-    void channel.close()
-  }, 'dsh-communication-plugin: коллектор Telegram')
 }

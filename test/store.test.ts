@@ -185,3 +185,43 @@ test('окружение процесса важнее файла, пустое 
   assert.equal(merged.TG_API_ID, '2')
   assert.equal(merged.TG_SESSION, 'из-файла')
 })
+
+test('подписка поднимается раньше чтения: сообщение в окне между ними не теряется', async () => {
+  const store = new InboxStore(':memory:')
+  const port = fakePort([msg(10, 'история', 30)])
+  // История читается лениво, и сообщение из потока приходит в этот момент.
+  const slow = {
+    ...port,
+    async *history(chat: string, limit: number) {
+      port.emit(msg(11, 'пришло во время чтения', 1))
+      yield* port.history(chat, limit)
+    },
+  }
+  const collector = new Collector(store, slow, { now: () => NOW })
+  await collector.start(new Map([[CHAT, 'чат']]))
+
+  assert.equal(store.count('inbox'), 2)
+  store.close()
+})
+
+test('непрочитанное собирается от последнего прочитанного, даже если курсор ушёл вперёд', async () => {
+  const store = new InboxStore(':memory:')
+  const port = fakePort([msg(5, 'старое непрочитанное', 40), msg(6, 'ещё непрочитанное', 35)])
+  // Курсор говорит, что заявки 5 и 6 уже собирались, но человек их не читал.
+  store.advanceCursor(CHAT, 6)
+  const withUnread = { ...port, lastRead: async () => 4 }
+  assert.equal(await new Collector(store, withUnread, { now: () => NOW }).catchUp('чат'), 2)
+
+  // Повтор дублей не плодит: порог тот же, ключ заявки тот же.
+  assert.equal(await new Collector(store, withUnread, { now: () => NOW }).catchUp('чат'), 0)
+  store.close()
+})
+
+test('состояние коллектора живёт в базе — раздел читает его из другого процесса', () => {
+  const store = new InboxStore(':memory:')
+  assert.equal(store.getMeta('collector.seenAt'), null)
+  store.setMeta('collector.seenAt', '123')
+  store.setMeta('collector.seenAt', '456')
+  assert.equal(store.getMeta('collector.seenAt'), '456')
+  store.close()
+})

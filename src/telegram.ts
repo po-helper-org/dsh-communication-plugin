@@ -61,23 +61,34 @@ export class TelegramChannel implements ChannelPort {
     })
   }
 
-  /** Поднимает соединение на готовой сессии. Сессии нет — говорим об этом прямо. */
+  /**
+   * Поднимает соединение на готовой сессии. Сессии нет — говорим об этом прямо.
+   *
+   * Поток обновлений запускается отдельным вызовом: `connect()` его не поднимает, и без
+   * `startUpdatesLoop()` подписка на новые сообщения молча не срабатывает — коллектор
+   * собирает историю и больше ничего. Проверено замером: пять маркеров подряд без единого
+   * события.
+   */
   async open(): Promise<string> {
     await this.client.connect()
+    let name: string
     try {
-      const me = await this.client.getMe()
-      return me.displayName
+      name = (await this.client.getMe()).displayName
     } catch {
       throw new NotAuthorizedError()
     }
+    await this.client.startUpdatesLoop()
+    return name
   }
 
   /** Идентификаторы отслеживаемых чатов: реестр задаётся ссылками, поток приходит с числами. */
   async resolve(refs: readonly string[]): Promise<Map<string, string>> {
     const resolved = new Map<string, string>()
     for (const ref of refs) {
-      const chat = await this.client.getChat(ref)
-      resolved.set(String(chat.id), ref)
+      // getPeer, а не getChat: «Избранное» (`me`) и личные диалоги — это пользователь,
+      // а не чат, и getChat на них отвечает отказом.
+      const peer = await this.client.getPeer(ref)
+      resolved.set(String(peer.id), ref)
     }
     return resolved
   }
@@ -86,6 +97,12 @@ export class TelegramChannel implements ChannelPort {
     for await (const message of this.client.iterHistory(chat, { limit })) {
       yield toIncoming(message as unknown as MessageLike)
     }
+  }
+
+  /** Последнее прочитанное входящее чата. Диалога нет — порога нет, вернём 0. */
+  async lastRead(chat: string): Promise<number> {
+    const [dialog] = await this.client.getPeerDialogs(chat)
+    return dialog === null || dialog === undefined ? 0 : dialog.lastReadIngoing
   }
 
   subscribe(handler: (message: IncomingMessage) => void): () => void {

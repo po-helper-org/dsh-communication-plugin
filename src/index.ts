@@ -10,8 +10,10 @@ export {
   type IncomingMessage,
 } from './collector.js'
 export { COMMUNICATION_CHANNEL, dispatch, type InboxPage, type RpcResult } from './channel.js'
-export { TelegramChannel, telegramOptionsFromEnv, toIncoming, type TelegramOptions } from './telegram.js'
 export { Config, type PluginConfig } from './plugin-config.js'
+
+// `telegram.js` намеренно не реэкспортируется: он тянет клиента с нативным модулем,
+// а этот модуль грузит харнесс. Коллектор импортирует его напрямую (`lib/telegram.js`).
 export { formatSummary, percentile, summarize, type LatencySummary } from './latency.js'
 export { mergeEnv, parseEnvFile, readEnvFile } from './env-file.js'
 

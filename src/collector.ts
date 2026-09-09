@@ -27,6 +27,11 @@ export interface ChannelPort {
   history: (chat: string, limit: number) => AsyncIterable<IncomingMessage>
   /** Подписка на поток. Возвращает отписку. */
   subscribe: (handler: (message: IncomingMessage) => void) => () => void
+  /**
+   * Идентификатор последнего прочитанного сообщения чата. Всё, что новее, лежит
+   * в непрочитанных и обязано попасть в Inbox при первом же запуске.
+   */
+  lastRead?: (chat: string) => Promise<number>
 }
 
 export interface CollectorOptions {
@@ -88,15 +93,31 @@ export class Collector {
     return saved
   }
 
-  /**
-   * Догон пропущенного за простой машины: идём от свежих к старым до курсора, пишем
-   * в обратном порядке, чтобы курсор двигался вперёд без дыр.
+/**
+   * Догон пропущенного: идём от свежих к старым до порога, пишем в обратном порядке,
+   * чтобы курсор двигался вперёд без дыр.
+   *
+   * Порог — не только наш курсор. Непрочитанное в чате может быть старше него (сообщение
+   * собрано прошлым запуском, но человеком не прочитано), поэтому берётся меньшее из двух:
+   * что мы уже собрали и что человек уже прочитал. Дубли отсекает ключ заявки, а не порог.
    */
-  async catchUp(chat: string): Promise<number> {
+  async catchUp(chat: string, chatId?: string): Promise<number> {
     const limit = this.options.catchUpLimit ?? 300
+    const lastRead = this.port.lastRead === undefined ? 0 : await this.port.lastRead(chat)
+    // Порог снимается до чтения и больше не пересчитывается. Подписка работает
+    // параллельно и двигает курсор вперёд; порог, пересчитанный по ходу, оборвал бы
+    // чтение на первом же сообщении, и старое непрочитанное потерялось бы.
+    const known = chatId === undefined ? 0 : this.store.cursor(chatId)
+    let floor = known === 0 ? lastRead : Math.min(known, lastRead === 0 ? known : lastRead)
     const pending: IncomingMessage[] = []
     for await (const message of this.port.history(chat, limit)) {
-      if (message.id <= this.store.cursor(message.chatId)) break
+      if (chatId === undefined) {
+        // Идентификатор чата заранее не известен — снимаем порог по первому сообщению.
+        const cursor = this.store.cursor(message.chatId)
+        floor = cursor === 0 ? lastRead : Math.min(cursor, lastRead === 0 ? cursor : lastRead)
+        chatId = message.chatId
+      }
+      if (message.id <= floor) break
       pending.push(message)
     }
     let saved = 0
@@ -104,6 +125,19 @@ export class Collector {
       if (this.accept(message)) saved += 1
     }
     return saved
+  }
+
+  /**
+   * Запуск: сперва подписка, потом чтение непрочитанного.
+   *
+   * Порядок принципиален. Между концом догона и началом подписки есть окно, и сообщение,
+   * пришедшее в него, не попало бы никуда. Подписка, поднятая первой, это окно закрывает;
+   * пересечение с догоном безвредно — дубли отсекает ключ заявки.
+   */
+  async start(chats: ReadonlyMap<string, string>): Promise<() => void> {
+    const unsubscribe = this.listen(new Set(chats.keys()))
+    for (const [chatId, ref] of chats) await this.catchUp(ref, chatId)
+    return unsubscribe
   }
 
   /** Подписка на поток. Чаты вне реестра игнорируются. */

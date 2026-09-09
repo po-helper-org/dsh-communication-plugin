@@ -1,8 +1,15 @@
 // Замер задержки: от отправки сообщения в канал до появления заявки в базе.
 //
-// Два режима.
-//   --report        считает по уже собранным заявкам, Telegram не нужен вовсе;
-//   без --report    контрольный прогон: шлёт себе маркеры и ждёт их появления.
+// Три режима.
+//   --report   считает по уже собранным заявкам, Telegram не нужен вовсе;
+//   --watch    ждёт новых заявок в базе и печатает задержку по каждой;
+//   иначе      контрольный прогон: шлёт маркеры и ждёт их появления.
+//
+// Контрольный прогон меряет только чужие сообщения. Своё отправленное сообщение клиент
+// апдейтом не получает: MTProto возвращает его прямо в ответе на запрос, и библиотека
+// подавляет дублирующее событие. Поэтому отправка самому себе тем же клиентом ничего
+// не измеряет — для замера сообщение должно прийти извне (с телефона, от собеседника),
+// а считает его режим --watch по базе, которую наполняет коллектор раздела.
 //
 // Контрольный прогон по умолчанию пишет в «Избранное» (`me`) — переписка с самим собой,
 // никому постороннему сообщения не уходят. Другой адресат задаётся явно: --chat @kто-то.
@@ -36,6 +43,37 @@ if (args.has('report')) {
   process.exit(0)
 }
 
+if (args.has('watch')) {
+  const want = Number(args.get('count') ?? 5)
+  const db = new DatabaseSync(dbPath)
+  const seen = new Set(db.prepare('SELECT key FROM items').all().map((row) => row.key))
+  console.log(`Жду новых заявок в ${dbPath}. Нужно ${want}. Отправляйте сообщения в отслеживаемый чат.`)
+  console.log('Прервать — Ctrl+C.\n')
+
+  const samples = []
+  const report = () => {
+    console.log('')
+    console.log(formatSummary(summarize(samples, budgetMs), 'Сквозная: отправка в канале → заявка в базе'))
+  }
+  process.on('SIGINT', () => { report(); db.close(); process.exit(0) })
+
+  while (samples.length < want) {
+    const rows = db.prepare('SELECT key, author, sent_at, received_at, text FROM items ORDER BY received_at ASC').all()
+    for (const row of rows) {
+      if (seen.has(row.key)) continue
+      seen.add(row.key)
+      const delta = Number(row.received_at) - Number(row.sent_at)
+      samples.push(delta)
+      const text = String(row.text ?? '').replace(/\s+/g, ' ').slice(0, 40)
+      console.log(`${samples.length}: ${(delta / 1000).toFixed(2)} с   ${row.author ?? '?'}: ${text}`)
+    }
+    if (samples.length < want) await new Promise((resolve) => setTimeout(resolve, 500))
+  }
+  report()
+  db.close()
+  process.exit(0)
+}
+
 const { TelegramClient } = await import('@mtcute/node')
 const apiId = Number(env.TG_API_ID)
 const apiHash = env.TG_API_HASH
@@ -56,6 +94,8 @@ try {
   console.error('Нет сессии Telegram: сначала `node bin/login.mjs` на этой машине')
   process.exit(1)
 }
+// Без запуска потока обновлений подписка молча не срабатывает: connect() его не поднимает.
+await client.startUpdatesLoop()
 console.log(`Аккаунт: ${me.displayName}. Адресат замера: ${chat}. Маркеров: ${count}`)
 
 /** Ждёт события с нужным маркером не дольше таймаута. Не дождались — замер не засчитан. */
