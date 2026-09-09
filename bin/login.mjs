@@ -13,4 +13,4 @@ if (!Number.isFinite(apiId) || apiId <= 0 || !apiHash) {
 const client = new TelegramClient({ apiId, apiHash, storage: process.env.TG_SESSION ?? 'tg.session' })
 const me = await client.start()
 console.log(`Вошли как ${me.displayName}. Сессия сохранена, раздел поднимется на ней сам.`)
-await client.close()
+await client.destroy()
