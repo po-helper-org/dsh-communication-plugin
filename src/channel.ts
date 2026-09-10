@@ -35,6 +35,27 @@ function failure(error: unknown): RpcResult<never> {
   }
 }
 
+/** Справочник лейблов раздела: подпись и цвет живут здесь, в заявке — только идентификатор. */
+export const LABELS = [
+  { id: 'answer', text: 'нужен ответ', tone: 'answer' },
+  { id: 'context', text: 'нужен контекст', tone: 'context' },
+  { id: 'sprint', text: 'риск спринта', tone: 'sprint' },
+  { id: 'quarter', text: 'риск квартала', tone: 'quarter' },
+  { id: 'noise', text: 'фон', tone: 'noise' },
+  { id: 'client', text: 'клиент', tone: 'client' },
+] as const
+
+const KNOWN = new Set<string>(LABELS.map((label) => label.id))
+
+function labelOf(payload: unknown): { key: string; label: string; on: boolean } {
+  const key = keyOf(payload)
+  const raw = payload as { label?: unknown; on?: unknown }
+  if (typeof raw.label !== 'string' || !KNOWN.has(raw.label)) {
+    throw new CommunicationError(`неизвестный лейбл: ${String(raw.label)}`)
+  }
+  return { key, label: raw.label, on: raw.on !== false }
+}
+
 function keyOf(payload: unknown): string {
   const key = (payload as { key?: unknown } | null)?.key
   if (typeof key !== 'string' || key === '') throw new CommunicationError('не передан ключ заявки')
@@ -46,7 +67,7 @@ export function dispatch(
   status: () => CollectorStatus,
   endpoint: string,
   payload: unknown,
-): RpcResult<InboxPage | Thread | { done: boolean }> {
+): RpcResult<InboxPage | Thread | { done: boolean } | { labels: string[] }> {
   try {
     switch (endpoint) {
       case 'list':
@@ -55,6 +76,10 @@ export function dispatch(
         return ok(store.thread(keyOf(payload)))
       case 'done':
         return ok({ done: store.markDone(keyOf(payload)) })
+      case 'label': {
+        const { key, label, on } = labelOf(payload)
+        return ok({ labels: store.setLabel(key, label, on) })
+      }
       default:
         return fail('unknown-endpoint', `неизвестная подкоманда канала: ${endpoint}`)
     }

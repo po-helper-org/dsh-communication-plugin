@@ -73,6 +73,7 @@ export function toItem(message: IncomingMessage, options: CollectorOptions & { r
     links: extractLinks(message.text),
     state: 'inbox',
     class: null,
+    labels: [],
   }
 }
 

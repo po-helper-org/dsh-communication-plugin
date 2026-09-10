@@ -9,7 +9,7 @@ export {
   type CollectorOptions,
   type IncomingMessage,
 } from './collector.js'
-export { COMMUNICATION_CHANNEL, dispatch, type InboxPage, type RpcResult } from './channel.js'
+export { COMMUNICATION_CHANNEL, LABELS, dispatch, type InboxPage, type RpcResult } from './channel.js'
 export { HEARTBEAT_STALE_MS, readStatus } from './status.js'
 export { Config, type PluginConfig } from './plugin-config.js'
 

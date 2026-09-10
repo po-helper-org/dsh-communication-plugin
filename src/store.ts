@@ -27,7 +27,8 @@ const SCHEMA = `
     has_media   INTEGER NOT NULL DEFAULT 0,
     links       TEXT,
     state       TEXT NOT NULL DEFAULT 'inbox',
-    class       TEXT
+    class       TEXT,
+    labels      TEXT
   );
   CREATE INDEX IF NOT EXISTS items_state ON items(state, sent_at DESC);
   CREATE INDEX IF NOT EXISTS items_thread ON items(thread_key, msg_id);
@@ -58,6 +59,12 @@ interface Row {
   links: string | null
   state: string
   class: string | null
+  labels: string | null
+}
+
+/** Список в одной ячейке: заявка редко несёт больше трёх лейблов, таблица связей избыточна. */
+function splitList(value: string | null): string[] {
+  return value === null || value === '' ? [] : value.split('\n')
 }
 
 function toItem(row: Row): Item {
@@ -78,10 +85,11 @@ function toItem(row: Row): Item {
     links: row.links === null || row.links === '' ? [] : row.links.split('\n'),
     state: row.state as State,
     class: row.class,
+    labels: splitList(row.labels),
   }
 }
 
-function toRow(row: Pick<Row, 'key' | 'chat_title' | 'author' | 'sent_at' | 'delayed' | 'has_media' | 'text'>): ItemRow {
+function toRow(row: Pick<Row, 'key' | 'chat_title' | 'author' | 'sent_at' | 'delayed' | 'has_media' | 'text' | 'labels'>): ItemRow {
   return {
     key: row.key,
     chatTitle: row.chat_title,
@@ -90,6 +98,7 @@ function toRow(row: Pick<Row, 'key' | 'chat_title' | 'author' | 'sent_at' | 'del
     delayed: row.delayed === 1,
     hasMedia: row.has_media === 1,
     preview: row.text.replace(/\s+/g, ' ').slice(0, 160),
+    labels: splitList(row.labels),
   }
 }
 
@@ -116,6 +125,7 @@ export class InboxStore {
       (this.db.prepare('PRAGMA table_info(items)').all() as Array<{ name: string }>).map((row) => row.name),
     )
     if (!columns.has('author_id')) this.db.exec('ALTER TABLE items ADD COLUMN author_id TEXT')
+    if (!columns.has('labels')) this.db.exec('ALTER TABLE items ADD COLUMN labels TEXT')
   }
 
   /**
@@ -125,14 +135,14 @@ export class InboxStore {
   save(item: Item): boolean {
     const result = this.db.prepare(`
       INSERT INTO items (key, channel, chat_id, chat_title, msg_id, thread_key, author, author_id,
-                         sent_at, received_at, delayed, text, has_media, links, state, class)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                         sent_at, received_at, delayed, text, has_media, links, state, class, labels)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       ON CONFLICT(key) DO NOTHING
     `).run(
       item.key, item.channel, item.chatId, item.chatTitle, item.msgId, item.threadKey,
       item.author, item.authorId, item.sentAt, item.receivedAt, item.delayed ? 1 : 0, item.text,
       item.hasMedia ? 1 : 0, item.links.length === 0 ? null : item.links.join('\n'),
-      item.state, item.class,
+      item.state, item.class, item.labels.length === 0 ? null : item.labels.join('\n'),
     )
     return result.changes === 1
   }
@@ -154,7 +164,7 @@ export class InboxStore {
   /** Список Inbox: всё собранное, новые сверху, без предварительного отсева. */
   list(limit = 100): ItemRow[] {
     const rows = this.db.prepare(`
-      SELECT key, chat_title, author, sent_at, delayed, has_media, text
+      SELECT key, chat_title, author, sent_at, delayed, has_media, text, labels
       FROM items WHERE state = 'inbox' ORDER BY sent_at DESC LIMIT ?
     `).all(limit) as Array<Parameters<typeof toRow>[0]>
     return rows.map(toRow)
@@ -171,14 +181,28 @@ export class InboxStore {
     if (row === undefined) throw new ItemNotFoundError(key)
     const item = toItem(row)
     const before = this.db.prepare(`
-      SELECT key, chat_title, author, sent_at, delayed, has_media, text FROM items
+      SELECT key, chat_title, author, sent_at, delayed, has_media, text, labels FROM items
       WHERE thread_key = ? AND msg_id < ? ORDER BY msg_id DESC LIMIT ?
     `).all(item.threadKey, item.msgId, radius) as Array<Parameters<typeof toRow>[0]>
     const after = this.db.prepare(`
-      SELECT key, chat_title, author, sent_at, delayed, has_media, text FROM items
+      SELECT key, chat_title, author, sent_at, delayed, has_media, text, labels FROM items
       WHERE thread_key = ? AND msg_id > ? ORDER BY msg_id ASC LIMIT ?
     `).all(item.threadKey, item.msgId, radius) as Array<Parameters<typeof toRow>[0]>
     return { item, before: before.map(toRow).reverse(), after: after.map(toRow) }
+  }
+
+  /**
+   * Ставит или снимает лейбл. Возвращает итоговый список: панель не пересчитывает
+   * состояние сама, а показывает то, что действительно записано.
+   */
+  setLabel(key: string, label: string, on: boolean): string[] {
+    const row = this.db.prepare('SELECT labels FROM items WHERE key = ?').get(key) as { labels: string | null } | undefined
+    if (row === undefined) throw new ItemNotFoundError(key)
+    const current = splitList(row.labels).filter((applied) => applied !== label)
+    const next = on ? [...current, label] : current
+    this.db.prepare('UPDATE items SET labels = ? WHERE key = ?')
+      .run(next.length === 0 ? null : next.join('\n'), key)
+    return next
   }
 
   /** Разбор: заявка уходит из Inbox и остаётся в истории. */

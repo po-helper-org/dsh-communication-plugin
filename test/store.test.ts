@@ -225,3 +225,30 @@ test('состояние коллектора живёт в базе — раз�
   assert.equal(store.getMeta('collector.seenAt'), '456')
   store.close()
 })
+
+test('лейбл ставится и снимается, повтор не двоит', () => {
+  const store = new InboxStore(':memory:')
+  const key = `telegram:${CHAT}:1`
+  store.save(toItem(msg(1, 'разметить'), { receivedAt: NOW }))
+
+  assert.deepEqual(store.setLabel(key, 'answer', true), ['answer'])
+  assert.deepEqual(store.setLabel(key, 'answer', true), ['answer'])
+  assert.deepEqual(store.setLabel(key, 'client', true), ['answer', 'client'])
+  assert.deepEqual(store.setLabel(key, 'answer', false), ['client'])
+
+  assert.deepEqual(store.thread(key).item.labels, ['client'])
+  assert.deepEqual(store.list()[0].labels, ['client'])
+  assert.throws(() => store.setLabel('нет-такой', 'answer', true), ItemNotFoundError)
+  store.close()
+})
+
+test('канал не принимает лейбл вне справочника', () => {
+  const store = new InboxStore(':memory:')
+  const key = `telegram:${CHAT}:1`
+  store.save(toItem(msg(1, 'разметить'), { receivedAt: NOW }))
+
+  assert.deepEqual(dispatch(store, status, 'label', { key, label: 'answer' }), { ok: true, value: { labels: ['answer'] } })
+  assert.equal(dispatch(store, status, 'label', { key, label: 'выдуманный' }).ok, false)
+  assert.equal(dispatch(store, status, 'label', { key }).ok, false)
+  store.close()
+})
