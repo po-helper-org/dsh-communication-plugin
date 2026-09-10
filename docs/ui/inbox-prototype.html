@@ -1,0 +1,902 @@
+<title>Входящие Product Owner</title>
+
+<style>
+  /* Палитра — токены DeepSeek Harness. Запасные значения взяты из его же темы
+     (design-platform.css), поэтому файл открывается сам по себе, а внутри харнесса
+     подхватывает живую тему без единой правки. */
+  :root {
+    --bg-base: var(--dsw-alias-bg-base, rgb(255, 255, 255));
+    --bg-layer: var(--dsw-alias-bg-layer-1, rgb(249, 250, 251));
+    --bg-sunk: var(--dsw-alias-bg-overlay, rgb(233, 236, 242));
+    --line-1: var(--dsw-alias-border-l1, rgba(0, 0, 0, 0.08));
+    --line-2: var(--dsw-alias-border-l2, rgba(0, 0, 0, 0.1));
+    --hover: var(--dsw-alias-interactive-bg-hover, rgba(38, 49, 72, 0.06));
+    --ink: var(--dsw-alias-label-primary, rgb(15, 17, 21));
+    --ink-2: var(--dsw-alias-label-secondary, rgb(97, 102, 107));
+    --ink-3: var(--dsw-alias-label-tertiary, rgb(129, 133, 140));
+    --accent: var(--dsw-alias-button-info-fill, rgb(65, 118, 230));
+    --accent-ink: #ffffff;
+    --warn: var(--dsw-alias-state-warn-primary, rgb(245, 158, 11));
+
+    /* Лейблы — основа разметки. Цвет несёт только точка, сам чип остаётся нейтральным:
+       десяток разноцветных плашек в ленте читается хуже, чем одна колонка точек. */
+    --lb-answer: rgb(65, 118, 230);
+    --lb-context: rgb(34, 150, 132);
+    --lb-quarter: rgb(139, 92, 246);
+    --lb-sprint: rgb(245, 158, 11);
+    --lb-noise: rgb(148, 155, 163);
+    --lb-client: rgb(236, 72, 118);
+
+    --radius: 8px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg-base: var(--dsw-alias-bg-base, rgb(21, 21, 23));
+      --bg-layer: var(--dsw-alias-bg-layer-1, rgb(35, 35, 36));
+      --bg-sunk: var(--dsw-alias-bg-overlay, rgb(44, 44, 46));
+      --line-1: var(--dsw-alias-border-l1, rgba(255, 255, 255, 0.06));
+      --line-2: var(--dsw-alias-border-l2, rgba(255, 255, 255, 0.12));
+      --hover: var(--dsw-alias-interactive-bg-hover, rgba(255, 255, 255, 0.08));
+      --ink: var(--dsw-alias-label-primary, rgb(247, 248, 250));
+      --ink-2: var(--dsw-alias-label-secondary, rgb(207, 211, 214));
+      --ink-3: var(--dsw-alias-label-tertiary, rgb(173, 178, 184));
+      --accent: var(--dsw-alias-button-info-fill, rgb(103, 158, 254));
+      --accent-ink: rgb(15, 17, 21);
+      --warn: var(--dsw-alias-state-warn-primary, rgb(245, 158, 11));
+      --lb-answer: rgb(103, 158, 254);
+      --lb-context: rgb(56, 189, 168);
+      --lb-quarter: rgb(167, 139, 250);
+      --lb-sprint: rgb(251, 191, 36);
+      --lb-noise: rgb(129, 133, 140);
+      --lb-client: rgb(244, 114, 152);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg-base: var(--dsw-alias-bg-base, rgb(21, 21, 23));
+    --bg-layer: var(--dsw-alias-bg-layer-1, rgb(35, 35, 36));
+    --bg-sunk: var(--dsw-alias-bg-overlay, rgb(44, 44, 46));
+    --line-1: var(--dsw-alias-border-l1, rgba(255, 255, 255, 0.06));
+    --line-2: var(--dsw-alias-border-l2, rgba(255, 255, 255, 0.12));
+    --hover: var(--dsw-alias-interactive-bg-hover, rgba(255, 255, 255, 0.08));
+    --ink: var(--dsw-alias-label-primary, rgb(247, 248, 250));
+    --ink-2: var(--dsw-alias-label-secondary, rgb(207, 211, 214));
+    --ink-3: var(--dsw-alias-label-tertiary, rgb(173, 178, 184));
+    --accent: var(--dsw-alias-button-info-fill, rgb(103, 158, 254));
+    --accent-ink: rgb(15, 17, 21);
+    --lb-answer: rgb(103, 158, 254);
+    --lb-context: rgb(56, 189, 168);
+    --lb-quarter: rgb(167, 139, 250);
+    --lb-sprint: rgb(251, 191, 36);
+    --lb-noise: rgb(129, 133, 140);
+    --lb-client: rgb(244, 114, 152);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg-base);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 13px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button { font: inherit; color: inherit; background: none; border: 0; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 4px; }
+
+  .app {
+    height: 100vh;
+    display: grid;
+    grid-template-columns: 340px minmax(0, 1fr) 280px;
+  }
+
+  @media (max-width: 1100px) { .app { grid-template-columns: 320px minmax(0, 1fr); } .context { display: none; } }
+  @media (max-width: 780px) { .app { grid-template-columns: 1fr; } .thread, .context { display: none; } }
+
+  /* ── Левая панель: список заявок ───────────────────────────────────
+     Разметка повторяет референс Chatwoot один в один: заголовок с плашкой
+     состояния и тремя иконками, вкладки со счётчиками, строка из четырёх
+     ярусов (канал, имя со временем, превью, лейблы), разделители во всю
+     ширину и завершающая строка списка. */
+
+  .list {
+    border-right: 1px solid var(--line-2);
+    display: grid;
+    grid-template-rows: auto auto 1fr;
+    min-height: 0;
+    background: var(--bg-base);
+  }
+
+  .list-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 16px 12px;
+  }
+
+  .list-top h1 {
+    margin: 0;
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  .pill {
+    font-size: 12px;
+    line-height: 18px;
+    color: var(--ink-2);
+    background: var(--bg-sunk);
+    border-radius: 6px;
+    padding: 1px 8px;
+  }
+
+  .icons { margin-left: auto; display: flex; gap: 4px; }
+
+  .icon-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    color: var(--ink-3);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    font-size: 15px;
+  }
+
+  .icon-btn:hover { background: var(--hover); color: var(--ink); }
+
+  .tabs {
+    display: flex;
+    gap: 20px;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--line-2);
+  }
+
+  .tab {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 0 10px;
+    font-size: 14px;
+    color: var(--ink-2);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+
+  .tab .n {
+    font-size: 12px;
+    line-height: 17px;
+    color: var(--ink-3);
+    background: var(--bg-sunk);
+    border-radius: 5px;
+    padding: 0 6px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab[aria-selected="true"] .n { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+
+  .rows { overflow-y: auto; min-height: 0; }
+
+  .row {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line-1);
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .row:hover { background: var(--hover); }
+  .row[aria-current="true"] { background: var(--bg-layer); }
+
+  .ava {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent-ink);
+    background: var(--accent);
+    align-self: start;
+    margin-top: 18px;
+  }
+
+  .ava.gray { background: var(--ink-3); }
+
+  .row-main { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+
+  /* Ярус канала: иконка и название источника мелким серым, как в референсе. */
+  .row-source {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+
+  .row-source .glyph { font-size: 12px; line-height: 1; }
+
+  .row-head { display: flex; align-items: baseline; gap: 10px; }
+
+  .row-name {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Две отметки времени: возраст переписки и время последнего сообщения. */
+  .row-when {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--ink-3);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .row-text {
+    font-size: 14px;
+    color: var(--ink-2);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .row-text .reply { color: var(--ink-3); margin-right: 4px; }
+
+  .row-bottom { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 3px; }
+  .row-bottom:empty { display: none; }
+
+  .lb {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    line-height: 20px;
+    color: var(--ink-2);
+    background: var(--bg-sunk);
+    border-radius: 6px;
+    padding: 0 8px 0 7px;
+    white-space: nowrap;
+  }
+
+  .lb::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--lb, var(--ink-3));
+    flex: none;
+  }
+
+  .lb.answer { --lb: var(--lb-answer); }
+  .lb.context { --lb: var(--lb-context); }
+  .lb.quarter { --lb: var(--lb-quarter); }
+  .lb.sprint { --lb: var(--lb-sprint); }
+  .lb.noise { --lb: var(--lb-noise); }
+  .lb.client { --lb: var(--lb-client); }
+  .lb.late { --lb: var(--warn); }
+
+  button.lb { cursor: pointer; }
+  button.lb:hover { background: var(--hover); color: var(--ink); }
+  button.lb[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--ink); }
+
+  .lb .x { color: var(--ink-3); margin-left: 2px; font-size: 13px; line-height: 1; }
+  .lb .x:hover { color: var(--ink); }
+
+  /* Поставлено моделью, а не человеком: пунктир снизу — единственное отличие,
+     потому что доверие к разметке зависит от того, кто её поставил. */
+  .lb.by-model { border-bottom: 1px dashed var(--ink-3); border-radius: 6px 6px 2px 2px; }
+
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--line-1);
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+
+  .filter-bar button { color: var(--accent); cursor: pointer; }
+
+  .picker {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px;
+    border: 1px solid var(--line-2);
+    border-radius: 8px;
+    background: var(--bg-base);
+    box-shadow: 0 6px 18px var(--dsw-alias-bg-mask-2, rgba(0, 0, 0, 0.12));
+  }
+
+  .picker button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--ink);
+  }
+
+  .picker button:hover { background: var(--hover); }
+  .picker .swatch { width: 8px; height: 8px; border-radius: 50%; }
+  .picker .tick { margin-left: auto; color: var(--accent); }
+
+  .list-end {
+    padding: 22px 16px 28px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--ink-3);
+  }
+
+  /* ── Центр: тред ───────────────────────────────────────────────────── */
+
+  .thread {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    min-height: 0;
+    background: var(--bg-layer);
+  }
+
+  .thread-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    background: var(--bg-base);
+    border-bottom: 1px solid var(--line-2);
+  }
+
+  .thread-who { display: flex; flex-direction: column; }
+  .thread-who b { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
+  .thread-who span { font-size: 11px; color: var(--ink-3); }
+
+  .resolve {
+    margin-left: auto;
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .resolve:hover { filter: brightness(1.05); }
+
+  .turns { overflow-y: auto; min-height: 0; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+
+  .turn { max-width: 620px; display: flex; flex-direction: column; gap: 4px; }
+
+  .bubble {
+    background: var(--bg-base);
+    border: 1px solid var(--line-1);
+    border-radius: 12px;
+    padding: 10px 14px;
+    white-space: pre-wrap;
+    line-height: 1.5;
+  }
+
+  .turn.focus .bubble { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent); }
+  .turn.mine { align-self: flex-end; align-items: flex-end; }
+  .turn.mine .bubble { background: color-mix(in srgb, var(--accent) 12%, var(--bg-base)); border-color: transparent; }
+
+  .turn-meta { font-size: 11px; color: var(--ink-3); padding: 0 4px; }
+
+  .file {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 7px 10px;
+    border: 1px solid var(--line-2);
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+
+  .file .sz { color: var(--ink-3); }
+
+  .composer {
+    background: var(--bg-base);
+    border-top: 1px solid var(--line-2);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--ink-3);
+    font-size: 12px;
+  }
+
+  .composer .stub {
+    flex: 1;
+    border: 1px dashed var(--line-2);
+    border-radius: 8px;
+    padding: 9px 12px;
+  }
+
+  /* ── Правая панель: контекст решения ───────────────────────────────── */
+
+  .context {
+    border-left: 1px solid var(--line-2);
+    background: var(--bg-base);
+    overflow-y: auto;
+    min-height: 0;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .block { display: flex; flex-direction: column; gap: 8px; }
+  /* Атрибут hidden слабее display:flex — без этой строки пустой блок остаётся на экране. */
+  .block[hidden] { display: none; }
+
+  .block h2 {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .facts { display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
+  .facts div { display: flex; gap: 8px; }
+  .facts dt { color: var(--ink-3); min-width: 62px; }
+  .facts dd { margin: 0; color: var(--ink); }
+
+  .labels { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+
+  .add-label {
+    font-size: 11px;
+    color: var(--accent);
+    border: 1px dashed var(--line-2);
+    border-radius: 5px;
+    padding: 1px 7px;
+    cursor: pointer;
+  }
+
+  .add-label:hover { border-color: var(--accent); }
+
+  .why { font-size: 12px; color: var(--ink-2); }
+
+  .goal {
+    font-size: 12px;
+    border-left: 2px solid var(--lb-sprint);
+    padding: 2px 0 2px 10px;
+    color: var(--ink-2);
+  }
+
+  .goal b { display: block; color: var(--ink); font-weight: 600; }
+
+  .note { font-size: 12px; color: var(--ink-2); }
+  .note b { color: var(--ink); font-weight: 600; }
+
+  .collector {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 11px;
+    color: var(--ink-3);
+    padding-top: 12px;
+    border-top: 1px solid var(--line-1);
+  }
+
+  .dot-live {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--dsw-alias-state-success-primary, rgb(34, 197, 94));
+  }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="app">
+  <section class="list" aria-label="Заявки">
+    <div class="list-top">
+      <h1>Входящие</h1>
+      <span class="pill">В работе</span>
+      <div class="icons">
+        <button class="icon-btn" type="button" title="Фильтры" aria-label="Фильтры">⚟</button>
+        <button class="icon-btn" type="button" title="Сортировка" aria-label="Сортировка">⇅</button>
+        <button class="icon-btn" type="button" title="Свернуть панель" aria-label="Свернуть панель">⇥</button>
+      </div>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" type="button">Мои <span class="n">6</span></button>
+      <button class="tab" role="tab" aria-selected="false" type="button">На проверку <span class="n">2</span></button>
+      <button class="tab" role="tab" aria-selected="false" type="button">Все <span class="n">134</span></button>
+    </div>
+
+    <div class="rows" id="rows" role="list"></div>
+  </section>
+
+  <section class="thread" aria-label="Диалог">
+    <div class="thread-top">
+      <div class="ava" id="thread-ava">ИС</div>
+      <div class="thread-who">
+        <b id="thread-name">Ирина Соколова</b>
+        <span id="thread-src">Telegram · личный диалог</span>
+      </div>
+      <button class="resolve" type="button">Разобрано</button>
+    </div>
+
+    <div class="turns" id="turns"></div>
+
+    <div class="composer">
+      <span class="stub">Ответ из карточки — следующая итерация. Пока разметка и разбор.</span>
+    </div>
+  </section>
+
+  <aside class="context" aria-label="Контекст решения">
+    <div class="block">
+      <h2>Лейблы</h2>
+      <div class="labels" id="labels"></div>
+      <div class="picker" id="picker" hidden></div>
+    </div>
+
+    <div class="block">
+      <h2>Почему размечено так</h2>
+      <p class="why" id="why"></p>
+    </div>
+
+    <div class="block">
+      <h2>Заявка</h2>
+      <dl class="facts" id="facts"></dl>
+    </div>
+
+    <div class="block" id="goal-block" hidden>
+      <h2>Задевает цель</h2>
+      <p class="goal" id="goal"></p>
+    </div>
+
+    <div class="block">
+      <h2>Что уже было</h2>
+      <p class="note" id="history"></p>
+    </div>
+
+    <div class="collector">
+      <span class="dot-live" aria-hidden="true"></span>
+      сбор идёт · Telegram, почта, MTS.Link
+    </div>
+  </aside>
+</div>
+
+<script>
+  /* Справочник лейблов — один на весь раздел. В заявке лежит идентификатор и то,
+     кто лейбл поставил: модель или человек. Подпись и цвет берутся отсюда, поэтому
+     переименование лейбла не требует правки ни одной заявки. */
+  const LABELS = {
+    answer: { text: 'нужен ответ', kind: 'answer' },
+    context: { text: 'нужен контекст', kind: 'context' },
+    sprint: { text: 'риск спринта', kind: 'sprint' },
+    quarter: { text: 'риск квартала', kind: 'quarter' },
+    noise: { text: 'фон', kind: 'noise' },
+    client: { text: 'клиент', kind: 'client' },
+    late: { text: 'с задержкой', kind: 'late' },
+  }
+
+  const ITEMS = [
+    {
+      id: 1,
+      glyph: '◇',
+      via: 'Telegram',
+      age: '3ч',
+      preview: 'С 9:40 не проходят оплаты через СБП — около 40% попыток...',
+      replied: false,
+      who: 'Ирина Соколова',
+      initials: 'ИС',
+      source: 'Telegram · личный диалог',
+      via: 'Telegram',
+      when: '12 мин',
+      labels: [['answer', 'model'], ['client', 'manual']],
+      why: 'Внешний клиент сообщает о сбое в проде, называет время начала и прямо спрашивает срок. Ответ ждут лично от вас.',
+      facts: [['Канал', 'Telegram, личный диалог'], ['Кто', 'Ирина Соколова, @i_sokolova'], ['Роль', 'платёжный партнёр'], ['Отправлено', '9 сентября, 22:04'], ['Собрано', 'через 0.8 с']],
+      goal: null,
+      history: 'Пишет <b>третий раз за неделю</b>, все три про платёжный шлюз. Последний ваш ответ — 4 сентября, через 6 часов.',
+      turns: [
+        { who: 'Ирина Соколова', at: '21:58', text: 'Привет! Ты сейчас на связи?' },
+        { who: 'Ирина Соколова', at: '22:01', text: 'Прикладываю выгрузку по неуспешным попыткам за сегодня', file: ['sbp-failures-09-09.csv', '184 КБ'] },
+        { who: 'Ирина Соколова', at: '22:04', focus: true, text: 'С 9:40 не проходят оплаты через СБП — около 40% попыток падают с таймаутом шлюза. Со стороны банка всё зелёное.\n\nКто у вас сегодня дежурный и когда сможете посмотреть? Нам важен срок, чтобы решать по стоп-крану у себя.' },
+        { who: 'Ирина Соколова', at: '22:06', text: 'Если что, я на связи до полуночи' },
+      ],
+    },
+    {
+      id: 2,
+      glyph: '▤',
+      via: 'MTS.Link',
+      age: '5ч',
+      preview: '@Алексей нужен твой ответ по флагу витрины GMV. Без него...',
+      replied: false,
+      who: 'Дмитрий Карпов',
+      initials: 'ДК',
+      source: 'MTS.Link · чат «Платформа / релизы»',
+      via: 'MTS.Link',
+      when: '38 мин',
+      labels: [['sprint', 'model'], ['answer', 'model']],
+      why: 'Прямое упоминание с блокатором: команда ждёт решения по флагу витрины, без него не закрывается цель спринта.',
+      facts: [['Канал', 'MTS.Link, упоминание'], ['Кто', 'Дмитрий Карпов'], ['Роль', 'тимлид платформы'], ['Отправлено', '9 сентября, 21:38'], ['Собрано', 'через 3.1 с']],
+      goal: 'Цель спринта 18|Витрина GMV отгружена в прод и подтверждена на пилотных площадках',
+      history: 'Команда стоит <b>38 минут</b>, двое переключились на другие задачи. По этой же теме вас упоминали вчера в 18:20.',
+      turns: [
+        { who: 'Никита Ершов', at: '21:30', text: 'Ветку собрал, тесты зелёные' },
+        { who: 'Дмитрий Карпов', at: '21:34', text: 'Остался только флаг — он на продуктовой стороне' },
+        { who: 'Дмитрий Карпов', at: '21:38', focus: true, text: '@Алексей нужен твой ответ по флагу витрины GMV. Без него не выкатываем, а без выката не закрывается цель спринта.\n\nВариантов два: включаем для всех площадок или только для пилотных пяти.' },
+        { who: 'Никита Ершов', at: '21:41', text: 'Стою на этом, переключаюсь на другую задачу' },
+        { who: 'Дмитрий Карпов', at: '21:52', text: 'Если до утра ответа не будет — переносим в следующий спринт' },
+      ],
+    },
+    {
+      id: 3,
+      glyph: '◇',
+      via: 'Telegram',
+      age: '2ч',
+      preview: 'С 1 октября режем квоты публичного API вдвое для партнёров...',
+      replied: false,
+      who: 'Антон Ветров',
+      initials: 'АВ',
+      source: 'Telegram · личный диалог',
+      via: 'Telegram',
+      when: '2 ч',
+      labels: [['quarter', 'model'], ['late', 'system']],
+      why: 'Партнёр режет квоты API со следующего квартала — это задевает обязательство квартала по внешним интеграциям. Срок ответа 20 сентября.',
+      facts: [['Канал', 'Telegram, личный диалог'], ['Кто', 'Антон Ветров, @a_vetrov'], ['Роль', 'партнёр по интеграциям'], ['Отправлено', '9 сентября, 20:10'], ['Собрано', '21:44, с задержкой']],
+      goal: 'KR 2.3|Внешние интеграции переведены на новый контракт без просадки по объёму',
+      history: 'Заявка собрана <b>с задержкой</b>: машина была выключена с 20:05 до 21:44. До срока из письма 11 дней.',
+      turns: [
+        { who: 'Антон Ветров', at: '20:02', text: 'Ты сейчас за интеграции отвечаешь?' },
+        { who: 'Антон Ветров', at: '20:10', focus: true, text: 'Предупреждаю заранее: с 1 октября режем квоты публичного API вдвое для партнёров без отдельного соглашения. У вас потребление выше нового лимита примерно на треть.\n\nЧтобы сохранить объём, до 20 сентября нужна заявка от юрлица.', file: ['api-limits-q4.pdf', '712 КБ'] },
+      ],
+    },
+    {
+      id: 4,
+      glyph: '✉',
+      via: 'Почта',
+      age: '3ч',
+      preview: 'Спасибо, Ольга. Смотрю правки и вернусь с позицией по 4.2',
+      replied: true,
+      who: 'Ольга Ким',
+      initials: 'ОК',
+      source: 'Почта · ok@partner-legal.ru',
+      via: 'Почта',
+      when: '3 ч',
+      labels: [['answer', 'model']],
+      why: 'Прямой вопрос с датой: позиция по правкам договора нужна до пятницы, иначе подписание сдвигается.',
+      facts: [['Канал', 'Почта'], ['Кто', 'Ольга Ким'], ['Роль', 'юрист партнёра'], ['Отправлено', '9 сентября, 19:12'], ['Собрано', 'через 24 с']],
+      goal: null,
+      history: 'Первое письмо с этого адреса за <b>полтора месяца</b>.',
+      turns: [
+        { who: 'Ольга Ким', at: '19:12', focus: true, text: 'Направляю сводку правок по договору пилота. Основное — пункт 4.2 про ответственность за простой сервиса и приложение Б со сроками.\n\nПросим вернуть позицию до пятницы, иначе подписание сдвигается на октябрь.', file: ['Договор_пилот_правки.docx', '96 КБ'] },
+      ],
+    },
+    {
+      id: 5,
+      glyph: '▤',
+      via: 'MTS.Link',
+      age: '4ч',
+      preview: 'Подскажи, кто сейчас владеет интеграцией с биллингом',
+      replied: false,
+      who: 'Сергей Ли',
+      initials: 'СЛ',
+      source: 'MTS.Link · чат «Аналитика»',
+      via: 'MTS.Link',
+      when: '4 ч',
+      labels: [['context', 'model']],
+      why: 'Спрашивают информацию, а не решение: кто владеет интеграцией с биллингом. Ответ короткий, но кроме вас его никто не знает.',
+      facts: [['Канал', 'MTS.Link, упоминание'], ['Кто', 'Сергей Ли'], ['Роль', 'аналитик'], ['Отправлено', '9 сентября, 18:05'], ['Собрано', 'через 1.9 с']],
+      goal: null,
+      history: 'Тот же вопрос задавали <b>26 августа</b>, ответа в треде нет.',
+      turns: [
+        { who: 'Сергей Ли', at: '17:58', text: 'В вики указан человек, который полгода как не в команде' },
+        { who: 'Сергей Ли', at: '18:05', focus: true, text: '@Алексей подскажи, кто сейчас владеет интеграцией с биллингом — хотим сверить справочник тарифов и не знаем, к кому идти.' },
+      ],
+    },
+    {
+      id: 6,
+      glyph: '◇',
+      via: 'Telegram',
+      age: '5ч',
+      preview: 'Девять запусков недели: инструмент для разметки логов...',
+      replied: false,
+      who: 'ProblemHunt',
+      initials: 'PH',
+      gray: true,
+      source: 'Telegram · папка «Стартапы»',
+      via: 'Telegram',
+      when: '5 ч',
+      labels: [['noise', 'model']],
+      why: 'Подписка из папки «Стартапы»: полезно как фон рынка, действий не требует. Такие заявки копятся, но не поднимаются наверх.',
+      facts: [['Канал', 'Telegram, канал'], ['Кто', 'ProblemHunt'], ['Роль', 'подписка'], ['Отправлено', '9 сентября, 17:20'], ['Собрано', 'через 0.4 с']],
+      goal: null,
+      history: 'Из этого канала за неделю собрано <b>83 заявки</b>, все размечены фоном.',
+      turns: [
+        { who: 'ProblemHunt', at: '17:20', focus: true, text: 'Девять запусков недели: инструмент для разметки логов, конструктор внутренних порталов, ещё один клиент для почты.' },
+      ],
+    },
+  ]
+
+  const rows = document.getElementById('rows')
+  const esc = (value) => String(value).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch])
+
+  /* Лейбл, поставленный моделью, помечается пунктиром: доверие к разметке зависит
+     от того, кто её поставил, и человек должен видеть разницу без наведения. */
+  const chip = ([id, by]) => {
+    const label = LABELS[id]
+    const model = by === 'model' ? ' by-model' : ''
+    const title = by === 'model' ? 'поставила модель' : by === 'system' ? 'признак сбора' : 'поставили вы'
+    return `<span class="lb ${label.kind}${model}" title="${title}">${esc(label.text)}</span>`
+  }
+
+  const chipButton = ([id, by]) => {
+    const label = LABELS[id]
+    const model = by === 'model' ? ' by-model' : ''
+    const pressed = filter === id
+    return `<button class="lb ${label.kind}${model}" type="button" data-label="${id}"
+             aria-pressed="${pressed}" title="Показать все заявки с лейблом">${esc(label.text)}</button>`
+  }
+
+  const chipRemovable = ([id, by]) => {
+    const label = LABELS[id]
+    const model = by === 'model' ? ' by-model' : ''
+    const title = by === 'model' ? 'поставила модель' : by === 'system' ? 'признак сбора' : 'поставили вы'
+    return `<span class="lb ${label.kind}${model}" title="${title}">${esc(label.text)}
+              <button class="x" type="button" data-remove="${id}" aria-label="Снять лейбл">×</button></span>`
+  }
+
+  let filter = null
+
+  function visibleItems() {
+    return filter === null ? ITEMS : ITEMS.filter((item) => item.labels.some(([id]) => id === filter))
+  }
+
+  function renderRows(activeId) {
+    const shown = visibleItems()
+    const bar = filter === null ? '' : `
+      <div class="filter-bar">
+        Лейбл «${esc(LABELS[filter].text)}» · ${shown.length}
+        <button type="button" data-reset="1">сбросить</button>
+      </div>`
+
+    rows.innerHTML = bar + shown.map((item) => `
+      <div class="row" role="listitem" data-id="${item.id}" aria-current="${item.id === activeId}" tabindex="0">
+        <span class="ava ${item.gray ? 'gray' : ''}">${esc(item.initials)}</span>
+        <span class="row-main">
+          <span class="row-source"><span class="glyph" aria-hidden="true">${item.glyph}</span>${esc(item.via)}</span>
+          <span class="row-head">
+            <span class="row-name">${esc(item.who)}</span>
+            <span class="row-when">${esc(item.age)} • ${esc(item.when)}</span>
+          </span>
+          <span class="row-text">${item.replied ? '<span class="reply" aria-hidden="true">↩</span>' : ''}${esc(item.preview)}</span>
+          <span class="row-bottom">${item.labels.map(chipButton).join('')}</span>
+        </span>
+      </div>`).join('') + (filter === null ? '<div class="list-end">Все заявки загружены 🎉</div>' : '')
+  }
+
+  function renderItem(item) {
+    document.getElementById('thread-ava').textContent = item.initials
+    document.getElementById('thread-ava').className = `ava ${item.gray ? 'gray' : ''}`
+    document.getElementById('thread-name').textContent = item.who
+    document.getElementById('thread-src').textContent = item.source
+
+    document.getElementById('turns').innerHTML = item.turns.map((turn) => `
+      <div class="turn ${turn.focus ? 'focus' : ''}">
+        <div class="bubble">${esc(turn.text)}${turn.file ? `
+          <span class="file">📎 ${esc(turn.file[0])} <span class="sz">${esc(turn.file[1])}</span></span>` : ''}</div>
+        <div class="turn-meta">${esc(turn.who)} · ${esc(turn.at)}</div>
+      </div>`).join('')
+
+    document.getElementById('labels').innerHTML =
+      item.labels.map(chipRemovable).join('') + '<button class="add-label" type="button" data-picker="1">+ лейбл</button>'
+    document.getElementById('picker').hidden = true
+    document.getElementById('why').textContent = item.why
+    document.getElementById('facts').innerHTML = item.facts
+      .map(([key, value]) => `<div><dt>${esc(key)}</dt><dd>${esc(value)}</dd></div>`).join('')
+
+    const goalBlock = document.getElementById('goal-block')
+    if (item.goal) {
+      const [key, text] = item.goal.split('|')
+      document.getElementById('goal').innerHTML = `<b>${esc(key)}</b>${esc(text)}`
+      goalBlock.hidden = false
+    } else {
+      goalBlock.hidden = true
+    }
+
+    document.getElementById('history').innerHTML = item.history
+  }
+
+  let active = ITEMS[0].id
+
+  function select(id) {
+    active = id
+    renderRows(active)
+    renderItem(ITEMS.find((item) => item.id === id))
+  }
+
+  rows.addEventListener('click', (event) => {
+    const reset = event.target.closest('[data-reset]')
+    if (reset) {
+      filter = null
+      select(active)
+      return
+    }
+
+    // Клик по лейблу — не выбор заявки, а фильтр по этому лейблу.
+    const label = event.target.closest('[data-label]')
+    if (label) {
+      filter = filter === label.dataset.label ? null : label.dataset.label
+      const shown = visibleItems()
+      select(shown.some((item) => item.id === active) ? active : (shown[0] ?? ITEMS[0]).id)
+      return
+    }
+
+    const row = event.target.closest('.row')
+    if (row) select(Number(row.dataset.id))
+  })
+
+  const labelsBox = document.getElementById('labels')
+  const picker = document.getElementById('picker')
+
+  labelsBox.addEventListener('click', (event) => {
+    const item = ITEMS.find((candidate) => candidate.id === active)
+
+    const remove = event.target.closest('[data-remove]')
+    if (remove) {
+      item.labels = item.labels.filter(([id]) => id !== remove.dataset.remove)
+      select(active)
+      return
+    }
+
+    if (event.target.closest('[data-picker]')) {
+      const applied = new Set(item.labels.map(([id]) => id))
+      picker.innerHTML = Object.entries(LABELS).map(([id, label]) => `
+        <button type="button" data-add="${id}">
+          <span class="swatch" style="background: var(--lb-${label.kind})"></span>
+          ${esc(label.text)}
+          ${applied.has(id) ? '<span class="tick">✓</span>' : ''}
+        </button>`).join('')
+      picker.hidden = false
+    }
+  })
+
+  picker.addEventListener('click', (event) => {
+    const add = event.target.closest('[data-add]')
+    if (!add) return
+    const item = ITEMS.find((candidate) => candidate.id === active)
+    const id = add.dataset.add
+    // Лейбл, снятый или поставленный человеком, всегда переходит в ручные:
+    // он перекрывает решение модели, а не спорит с ним.
+    item.labels = item.labels.some(([applied]) => applied === id)
+      ? item.labels.filter(([applied]) => applied !== id)
+      : [...item.labels, [id, 'manual']]
+    select(active)
+  })
+
+  document.querySelectorAll('.tab').forEach((tab, _, all) => {
+    tab.addEventListener('click', () => {
+      all.forEach((other) => other.setAttribute('aria-selected', String(other === tab)))
+    })
+  })
+
+  select(active)
+</script>
