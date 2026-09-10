@@ -347,148 +347,352 @@
     color: var(--ink-3);
   }
 
-  /* ── Центр: тред ───────────────────────────────────────────────────── */
+  /* ── Центр: диалог ─────────────────────────────────────────────────
+     По референсу: шапка с собеседником и действием, лента пузырей, системные
+     события строкой по центру, композер с вкладками, копией и отправкой. */
 
   .thread {
     display: grid;
     grid-template-rows: auto 1fr auto;
     min-height: 0;
-    background: var(--bg-layer);
+    background: var(--bg-base);
   }
 
   .thread-top {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     padding: 12px 20px;
-    background: var(--bg-base);
     border-bottom: 1px solid var(--line-2);
   }
 
-  .thread-who { display: flex; flex-direction: column; }
-  .thread-who b { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
-  .thread-who span { font-size: 11px; color: var(--ink-3); }
+  .thread-top .ava { width: 36px; height: 36px; margin-top: 0; font-size: 12px; }
 
-  .resolve {
+  .thread-who { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  .thread-who b { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+
+  .thread-who span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+
+  .thread-actions { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+
+  /* Кнопка со стрелкой: основное действие и список остальных, как в референсе. */
+  .split {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid var(--line-2);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bg-layer);
+  }
+
+  .split button { padding: 6px 12px; cursor: pointer; font-size: 13px; }
+  .split button + button { border-left: 1px solid var(--line-2); padding: 6px 8px; color: var(--ink-3); }
+  .split button:hover { background: var(--hover); }
+
+  .turns {
+    overflow-y: auto;
+    min-height: 0;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    background: var(--bg-layer);
+  }
+
+  .turn { display: flex; flex-direction: column; gap: 4px; max-width: 640px; }
+  .turn.mine { align-self: flex-end; align-items: flex-end; }
+
+  .bubble {
+    background: var(--bg-base);
+    border-radius: 12px;
+    padding: 11px 15px;
+    white-space: pre-wrap;
+    line-height: 1.5;
+    font-size: 14px;
+    border: 1px solid var(--line-1);
+  }
+
+  .turn.mine .bubble {
+    background: color-mix(in srgb, var(--accent) 14%, var(--bg-base));
+    border-color: transparent;
+  }
+
+  .turn.focus .bubble { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+
+  .turn-meta { font-size: 11px; color: var(--ink-3); padding: 0 4px; }
+
+  /* Вложение живёт внутри своего сообщения, а не отдельным блоком карточки. */
+  .file {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-top: 9px;
+    padding: 8px 10px;
+    border: 1px solid var(--line-2);
+    border-radius: 8px;
+    background: var(--bg-base);
+    font-size: 13px;
+    max-width: 320px;
+  }
+
+  .file .ext {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: var(--dsw-alias-state-error-primary, rgb(236, 19, 19));
+    text-transform: uppercase;
+  }
+
+  .file .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file .sz { margin-left: auto; color: var(--ink-3); font-size: 12px; }
+
+  /* Системное событие: кто и что сделал с заявкой, строкой по центру ленты. */
+  .event {
+    align-self: center;
+    font-size: 12px;
+    color: var(--ink-3);
+    background: var(--bg-base);
+    border: 1px solid var(--line-1);
+    border-radius: 999px;
+    padding: 3px 12px;
+  }
+
+  .composer { border-top: 1px solid var(--line-2); background: var(--bg-base); }
+
+  .composer-top {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 20px 0;
+  }
+
+  .composer-top .ctab { font-size: 13px; color: var(--ink-3); cursor: pointer; padding-bottom: 2px; }
+  .composer-top .ctab[aria-selected="true"] { color: var(--ink); font-weight: 600; }
+  .composer-top .right { margin-left: auto; display: flex; gap: 4px; }
+
+  .composer-cc {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 20px 0;
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+
+  .composer-cc .addr { color: var(--ink-2); }
+  .composer-cc .bcc { margin-left: auto; color: var(--accent); cursor: pointer; }
+
+  .composer-field {
+    margin: 8px 20px 0;
+    min-height: 64px;
+    font-size: 13px;
+    color: var(--ink-3);
+  }
+
+  .composer-bottom {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 20px 12px;
+  }
+
+  .send {
     margin-left: auto;
     background: var(--accent);
     color: var(--accent-ink);
-    border-radius: 6px;
-    padding: 6px 14px;
+    border-radius: 8px;
+    padding: 7px 14px;
+    font-size: 13px;
     font-weight: 500;
     cursor: pointer;
   }
 
-  .resolve:hover { filter: brightness(1.05); }
+  .send:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  .turns { overflow-y: auto; min-height: 0; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+  .composer-note { padding: 0 20px 12px; font-size: 12px; color: var(--ink-3); }
 
-  .turn { max-width: 620px; display: flex; flex-direction: column; gap: 4px; }
-
-  .bubble {
-    background: var(--bg-base);
-    border: 1px solid var(--line-1);
-    border-radius: 12px;
-    padding: 10px 14px;
-    white-space: pre-wrap;
-    line-height: 1.5;
-  }
-
-  .turn.focus .bubble { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent); }
-  .turn.mine { align-self: flex-end; align-items: flex-end; }
-  .turn.mine .bubble { background: color-mix(in srgb, var(--accent) 12%, var(--bg-base)); border-color: transparent; }
-
-  .turn-meta { font-size: 11px; color: var(--ink-3); padding: 0 4px; }
-
-  .file {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 8px;
-    padding: 7px 10px;
-    border: 1px solid var(--line-2);
-    border-radius: 8px;
-    font-size: 12px;
-    color: var(--ink-2);
-  }
-
-  .file .sz { color: var(--ink-3); }
-
-  .composer {
-    background: var(--bg-base);
-    border-top: 1px solid var(--line-2);
-    padding: 12px 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: var(--ink-3);
-    font-size: 12px;
-  }
-
-  .composer .stub {
-    flex: 1;
-    border: 1px dashed var(--line-2);
-    border-radius: 8px;
-    padding: 9px 12px;
-  }
-
-  /* ── Правая панель: контекст решения ───────────────────────────────── */
+  /* ── Правая панель ─────────────────────────────────────────────────
+     Порядок референса: контакт, действия по заявке, свёрнутые разделы. */
 
   .context {
     border-left: 1px solid var(--line-2);
     background: var(--bg-base);
     overflow-y: auto;
     min-height: 0;
-    padding: 16px;
     display: flex;
     flex-direction: column;
-    gap: 18px;
   }
 
-  .block { display: flex; flex-direction: column; gap: 8px; }
-  /* Атрибут hidden слабее display:flex — без этой строки пустой блок остаётся на экране. */
-  .block[hidden] { display: none; }
-
-  .block h2 {
-    margin: 0;
-    font-size: 11px;
+  .ctx-top {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line-2);
+    font-size: 14px;
     font-weight: 600;
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
-    color: var(--ink-3);
   }
 
-  .facts { display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
-  .facts div { display: flex; gap: 8px; }
-  .facts dt { color: var(--ink-3); min-width: 62px; }
-  .facts dd { margin: 0; color: var(--ink); }
+  .ctx-top .close { margin-left: auto; color: var(--ink-3); cursor: pointer; font-size: 15px; }
+  .ctx-top .close:hover { color: var(--ink); }
+
+  .card { padding: 16px; display: flex; flex-direction: column; gap: 12px; border-bottom: 1px solid var(--line-2); }
+
+  .card-id { display: flex; align-items: center; gap: 12px; }
+  .card-id .ava { width: 44px; height: 44px; margin-top: 0; font-size: 14px; }
+  .card-id b { font-size: 15px; font-weight: 600; }
+  .card-id .open { color: var(--ink-3); font-size: 12px; cursor: pointer; }
+
+  .card-rows { display: flex; flex-direction: column; gap: 7px; font-size: 13px; color: var(--ink-2); }
+  .card-rows div { display: flex; align-items: center; gap: 9px; }
+  .card-rows .glyph { color: var(--ink-3); width: 14px; text-align: center; }
+  .card-rows .none { color: var(--ink-3); }
+
+  .card-tools { display: flex; gap: 6px; }
+
+  .tool {
+    width: 30px;
+    height: 28px;
+    border: 1px solid var(--line-2);
+    border-radius: 7px;
+    color: var(--ink-3);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    font-size: 13px;
+  }
+
+  .tool:hover { background: var(--hover); color: var(--ink); }
+  .tool.danger:hover { color: var(--dsw-alias-state-error-primary, rgb(236, 19, 19)); }
+
+  .section { border-bottom: 1px solid var(--line-2); }
+
+  .section > summary {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .section > summary::-webkit-details-marker { display: none; }
+  .section > summary::after { content: "+"; margin-left: auto; color: var(--ink-3); font-size: 15px; }
+  .section[open] > summary::after { content: "−"; }
+
+  .section-body { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 14px; }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field > span { font-size: 12px; color: var(--ink-2); font-weight: 500; }
+
+  .select {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--line-2);
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-size: 13px;
+    cursor: pointer;
+    background: var(--bg-base);
+  }
+
+  .select:hover { border-color: var(--accent); }
+  .select .chev { margin-left: auto; color: var(--ink-3); font-size: 11px; }
+  .select .mini {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-size: 10px;
+    font-weight: 600;
+    display: grid;
+    place-items: center;
+  }
+
+  .select .muted { color: var(--ink-3); }
 
   .labels { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 
   .add-label {
-    font-size: 11px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
     color: var(--accent);
-    border: 1px dashed var(--line-2);
-    border-radius: 5px;
-    padding: 1px 7px;
+    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    border-radius: 6px;
+    padding: 1px 8px;
     cursor: pointer;
   }
 
-  .add-label:hover { border-color: var(--accent); }
+  .add-label:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
 
-  .why { font-size: 12px; color: var(--ink-2); }
-
-  .goal {
-    font-size: 12px;
-    border-left: 2px solid var(--lb-sprint);
-    padding: 2px 0 2px 10px;
-    color: var(--ink-2);
+  .picker {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px;
+    border: 1px solid var(--line-2);
+    border-radius: 10px;
+    background: var(--bg-base);
+    box-shadow: 0 8px 24px var(--dsw-alias-bg-mask-2, rgba(0, 0, 0, 0.14));
   }
 
+  .picker .picker-title { font-size: 12px; font-weight: 600; padding: 2px 4px 6px; }
+
+  .picker input {
+    border: 1px solid var(--line-2);
+    border-radius: 7px;
+    padding: 6px 9px;
+    font: inherit;
+    font-size: 13px;
+    background: var(--bg-base);
+    color: var(--ink);
+    outline: none;
+    margin-bottom: 6px;
+  }
+
+  .picker input:focus { border-color: var(--accent); }
+
+  .picker button {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 6px 8px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--ink);
+  }
+
+  .picker button:hover { background: var(--hover); }
+  .picker .swatch { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .picker .tick { margin-left: auto; color: var(--accent); }
+
+  .why { font-size: 13px; color: var(--ink-2); line-height: 1.5; }
+
+  .facts { display: flex; flex-direction: column; gap: 7px; font-size: 13px; }
+  .facts div { display: flex; gap: 10px; }
+  .facts dt { color: var(--ink-3); min-width: 78px; flex: none; }
+  .facts dd { margin: 0; color: var(--ink); }
+
+  .goal { font-size: 13px; color: var(--ink-2); border-left: 2px solid var(--lb-sprint); padding-left: 10px; }
   .goal b { display: block; color: var(--ink); font-weight: 600; }
 
-  .note { font-size: 12px; color: var(--ink-2); }
+  .note { font-size: 13px; color: var(--ink-2); line-height: 1.5; }
   .note b { color: var(--ink); font-weight: 600; }
+
+  .prev { display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+  .prev div { display: flex; gap: 8px; color: var(--ink-2); }
+  .prev .when { color: var(--ink-3); white-space: nowrap; }
 
   .collector {
     margin-top: auto;
@@ -497,7 +701,7 @@
     gap: 7px;
     font-size: 11px;
     color: var(--ink-3);
-    padding-top: 12px;
+    padding: 12px 16px;
     border-top: 1px solid var(--line-1);
   }
 
@@ -537,44 +741,118 @@
       <div class="ava" id="thread-ava">ИС</div>
       <div class="thread-who">
         <b id="thread-name">Ирина Соколова</b>
-        <span id="thread-src">Telegram · личный диалог</span>
+        <span><span class="glyph" id="thread-glyph" aria-hidden="true">◇</span><span id="thread-src">Telegram</span></span>
       </div>
-      <button class="resolve" type="button">Разобрано</button>
+      <div class="thread-actions">
+        <span class="split">
+          <button type="button">Разобрано</button>
+          <button type="button" aria-label="Другие действия">▾</button>
+        </span>
+        <button class="icon-btn" type="button" aria-label="Меню заявки">⋮</button>
+      </div>
     </div>
 
     <div class="turns" id="turns"></div>
 
     <div class="composer">
-      <span class="stub">Ответ из карточки — следующая итерация. Пока разметка и разбор.</span>
+      <div class="composer-top">
+        <button class="ctab" type="button" aria-selected="true">Ответ</button>
+        <button class="ctab" type="button" aria-selected="false">Заметка для себя</button>
+        <span class="right">
+          <button class="icon-btn" type="button" aria-label="Черновик от модели">✦</button>
+          <button class="icon-btn" type="button" aria-label="Развернуть">⤢</button>
+        </span>
+      </div>
+
+      <div class="composer-cc">
+        Кому <span class="addr" id="composer-to">@i_sokolova</span>
+        <span class="bcc">копия</span>
+      </div>
+
+      <div class="composer-field">Shift + Enter — новая строка. «/» — заготовка ответа.</div>
+
+      <div class="composer-bottom">
+        <button class="icon-btn" type="button" aria-label="Эмодзи">☺</button>
+        <button class="icon-btn" type="button" aria-label="Вложение">📎</button>
+        <button class="icon-btn" type="button" aria-label="Голосовое">🎙</button>
+        <button class="icon-btn" type="button" aria-label="Подпись">✎</button>
+        <button class="send" type="button" disabled>Отправить (⌘ + ↵)</button>
+      </div>
+
+      <p class="composer-note">Ответ из карточки — следующая итерация. Отправку всегда подтверждает человек.</p>
     </div>
   </section>
 
-  <aside class="context" aria-label="Контекст решения">
-    <div class="block">
-      <h2>Лейблы</h2>
-      <div class="labels" id="labels"></div>
-      <div class="picker" id="picker" hidden></div>
+  <aside class="context" aria-label="Контекст заявки">
+    <div class="ctx-top">Контакт <button class="close" type="button" aria-label="Закрыть панель">✕</button></div>
+
+    <div class="card">
+      <div class="card-id">
+        <span class="ava" id="ctx-ava">ИС</span>
+        <span>
+          <b id="ctx-name">Ирина Соколова</b>
+          <span class="open" title="Открыть в канале"> ↗</span>
+        </span>
+      </div>
+
+      <div class="card-rows" id="ctx-rows"></div>
+
+      <div class="card-tools">
+        <button class="tool" type="button" aria-label="Написать">✉</button>
+        <button class="tool" type="button" aria-label="Править контакт">✎</button>
+        <button class="tool" type="button" aria-label="Объединить">⑃</button>
+        <button class="tool danger" type="button" aria-label="Удалить">🗑</button>
+      </div>
     </div>
 
-    <div class="block">
-      <h2>Почему размечено так</h2>
-      <p class="why" id="why"></p>
-    </div>
+    <details class="section" open>
+      <summary>Действия по заявке</summary>
+      <div class="section-body">
+        <label class="field">
+          <span>Ответственный</span>
+          <span class="select"><span class="mini">АИ</span> Алексей Ишманов <span class="chev">▾</span></span>
+        </label>
 
-    <div class="block">
-      <h2>Заявка</h2>
-      <dl class="facts" id="facts"></dl>
-    </div>
+        <label class="field">
+          <span>Канал</span>
+          <span class="select"><span id="ctx-channel">Telegram, личный диалог</span> <span class="chev">▾</span></span>
+        </label>
 
-    <div class="block" id="goal-block" hidden>
-      <h2>Задевает цель</h2>
-      <p class="goal" id="goal"></p>
-    </div>
+        <label class="field">
+          <span>Срочность</span>
+          <span class="select"><span class="muted" id="ctx-priority">не задана</span> <span class="chev">▾</span></span>
+        </label>
 
-    <div class="block">
-      <h2>Что уже было</h2>
-      <p class="note" id="history"></p>
-    </div>
+        <div class="field">
+          <span>Лейблы</span>
+          <div class="labels" id="labels"></div>
+          <div class="picker" id="picker" hidden></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="section" open>
+      <summary>Почему размечено так</summary>
+      <div class="section-body"><p class="why" id="why"></p></div>
+    </details>
+
+    <details class="section">
+      <summary>Сведения о заявке</summary>
+      <div class="section-body">
+        <dl class="facts" id="facts"></dl>
+        <p class="goal" id="goal" hidden></p>
+      </div>
+    </details>
+
+    <details class="section">
+      <summary>Прошлые обращения</summary>
+      <div class="section-body"><p class="note" id="history"></p></div>
+    </details>
+
+    <details class="section">
+      <summary>Участники</summary>
+      <div class="section-body"><p class="note" id="parts"></p></div>
+    </details>
 
     <div class="collector">
       <span class="dot-live" aria-hidden="true"></span>
@@ -600,6 +878,11 @@
   const ITEMS = [
     {
       id: 1,
+      handle: '@i_sokolova',
+      contact: [['✉', 'не указана', True], ['◇', '@i_sokolova', False], ['⌂', 'Платёжный партнёр', False]],
+      priority: 'сегодня',
+      parts: 'Ирина Соколова, вы',
+      event: 'Модель поставила лейблы «нужен ответ» и «клиент»',
       glyph: '◇',
       via: 'Telegram',
       age: '3ч',
@@ -624,6 +907,11 @@
     },
     {
       id: 2,
+      handle: 'чат «Платформа / релизы»',
+      contact: [['✉', 'не указана', True], ['▤', 'MTS.Link, тимлид платформы', False], ['⌂', 'Команда платформы', False]],
+      priority: 'до утра',
+      parts: 'Дмитрий Карпов, Никита Ершов, вы',
+      event: 'Модель поставила лейбл «риск спринта»',
       glyph: '▤',
       via: 'MTS.Link',
       age: '5ч',
@@ -649,6 +937,11 @@
     },
     {
       id: 3,
+      handle: '@a_vetrov',
+      contact: [['✉', 'не указана', True], ['◇', '@a_vetrov', False], ['⌂', 'Партнёр по интеграциям', False]],
+      priority: 'до 20 сентября',
+      parts: 'Антон Ветров, вы',
+      event: 'Заявка собрана с задержкой: машина была выключена',
       glyph: '◇',
       via: 'Telegram',
       age: '2ч',
@@ -671,6 +964,11 @@
     },
     {
       id: 4,
+      handle: 'ok@partner-legal.ru',
+      contact: [['✉', 'ok@partner-legal.ru', False], ['☏', 'не указан', True], ['⌂', 'Юридическая служба партнёра', False]],
+      priority: 'до пятницы',
+      parts: 'Ольга Ким, вы',
+      event: null,
       glyph: '✉',
       via: 'Почта',
       age: '3ч',
@@ -687,11 +985,17 @@
       goal: null,
       history: 'Первое письмо с этого адреса за <b>полтора месяца</b>.',
       turns: [
+        { who: 'Вы', at: '19:40', mine: true, text: 'Спасибо, Ольга. Смотрю правки, вернусь с позицией по пункту 4.2 до четверга.' },
         { who: 'Ольга Ким', at: '19:12', focus: true, text: 'Направляю сводку правок по договору пилота. Основное — пункт 4.2 про ответственность за простой сервиса и приложение Б со сроками.\n\nПросим вернуть позицию до пятницы, иначе подписание сдвигается на октябрь.', file: ['Договор_пилот_правки.docx', '96 КБ'] },
       ],
     },
     {
       id: 5,
+      handle: 'чат «Аналитика»',
+      contact: [['✉', 'не указана', True], ['▤', 'MTS.Link, аналитик', False], ['⌂', 'Аналитика', False]],
+      priority: null,
+      parts: 'Сергей Ли, вы',
+      event: null,
       glyph: '▤',
       via: 'MTS.Link',
       age: '4ч',
@@ -714,6 +1018,11 @@
     },
     {
       id: 6,
+      handle: 'канал',
+      contact: [['✉', 'не указана', True], ['◇', 'канал ProblemHunt', False], ['⌂', 'Подписка, папка «Стартапы»', False]],
+      priority: null,
+      parts: 'только канал',
+      event: null,
       glyph: '◇',
       via: 'Telegram',
       age: '5ч',
@@ -797,32 +1106,50 @@
     document.getElementById('thread-ava').textContent = item.initials
     document.getElementById('thread-ava').className = `ava ${item.gray ? 'gray' : ''}`
     document.getElementById('thread-name').textContent = item.who
+    document.getElementById('thread-glyph').textContent = item.glyph
     document.getElementById('thread-src').textContent = item.source
+    document.getElementById('composer-to').textContent = item.handle
 
     document.getElementById('turns').innerHTML = item.turns.map((turn) => `
-      <div class="turn ${turn.focus ? 'focus' : ''}">
+      <div class="turn ${turn.focus ? 'focus' : ''} ${turn.mine ? 'mine' : ''}">
         <div class="bubble">${esc(turn.text)}${turn.file ? `
-          <span class="file">📎 ${esc(turn.file[0])} <span class="sz">${esc(turn.file[1])}</span></span>` : ''}</div>
+          <span class="file">
+            <span class="ext">${esc(turn.file[0].split('.').pop())}</span>
+            <span class="nm">${esc(turn.file[0])}</span>
+            <span class="sz">${esc(turn.file[1])}</span>
+          </span>` : ''}</div>
         <div class="turn-meta">${esc(turn.who)} · ${esc(turn.at)}</div>
-      </div>`).join('')
+      </div>`).join('') + (item.event ? `<div class="event">${esc(item.event)}</div>` : '')
+
+    document.getElementById('ctx-ava').textContent = item.initials
+    document.getElementById('ctx-ava').className = `ava ${item.gray ? 'gray' : ''}`
+    document.getElementById('ctx-name').textContent = item.who
+    document.getElementById('ctx-rows').innerHTML = item.contact
+      .map(([glyph, value, none]) => `
+        <div><span class="glyph" aria-hidden="true">${glyph}</span>
+        <span class="${none ? 'none' : ''}">${esc(value)}</span></div>`).join('')
+    document.getElementById('ctx-channel').textContent = item.facts[0][1]
+    document.getElementById('ctx-priority').textContent = item.priority ?? 'не задана'
 
     document.getElementById('labels').innerHTML =
       item.labels.map(chipRemovable).join('') + '<button class="add-label" type="button" data-picker="1">+ лейбл</button>'
     document.getElementById('picker').hidden = true
+
     document.getElementById('why').textContent = item.why
     document.getElementById('facts').innerHTML = item.facts
       .map(([key, value]) => `<div><dt>${esc(key)}</dt><dd>${esc(value)}</dd></div>`).join('')
 
-    const goalBlock = document.getElementById('goal-block')
+    const goal = document.getElementById('goal')
     if (item.goal) {
       const [key, text] = item.goal.split('|')
-      document.getElementById('goal').innerHTML = `<b>${esc(key)}</b>${esc(text)}`
-      goalBlock.hidden = false
+      goal.innerHTML = `<b>${esc(key)}</b>${esc(text)}`
+      goal.hidden = false
     } else {
-      goalBlock.hidden = true
+      goal.hidden = true
     }
 
     document.getElementById('history').innerHTML = item.history
+    document.getElementById('parts').textContent = item.parts
   }
 
   let active = ITEMS[0].id
