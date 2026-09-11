@@ -77,3 +77,11 @@ export interface CollectorStatus {
  */
 export const CHAT_KINDS = ['user', 'bot', 'group', 'supergroup', 'channel', 'gigagroup', 'monoforum'] as const
 export type ChatKind = (typeof CHAT_KINDS)[number]
+
+/**
+ * Куда уходит заявка. `dialog` — система диалогов, `feed` — лента.
+ * Порядок значений канонический: по нему маршруты сортируются перед хранением,
+ * поэтому одинаковый набор всегда даёт одинаковую строку и группируется без сюрпризов.
+ */
+export const ROUTES = ['dialog', 'feed'] as const
+export type Route = (typeof ROUTES)[number]
