@@ -18,6 +18,7 @@ export const classNames = {
 
   panel: 'comm-panel',
   columns: 'comm-columns',
+  routes: 'comm-routes',
 
   list: 'comm-list',
   listTop: 'comm-list-top',
@@ -323,4 +324,15 @@ button.${c.lb}:hover { color: var(--dsw-alias-label-primary); }
   color: var(--dsw-alias-label-tertiary); padding: 12px 16px; border-top: 1px solid var(--dsw-alias-border-l1);
 }
 .${c.dotLive} { width: 6px; height: 6px; border-radius: 50%; background: var(--dsw-alias-state-success-primary); }
+
+/* Разметка потока растёт с числом чатов; без потолка она сожмёт колонки Inbox до нуля. */
+.${c.routes} {
+  flex: none; max-height: 35%; overflow-y: auto; font-size: 13px;
+  padding: 12px 16px; border-top: 1px solid var(--dsw-alias-border-l1);
+}
+.${c.routes} h3 { margin: 0 0 4px; font-size: 13px; }
+.${c.routes} p { margin: 0 0 8px; color: var(--dsw-alias-label-secondary); }
+.${c.routes} table { border-collapse: collapse; width: 100%; }
+.${c.routes} th, .${c.routes} td { text-align: left; padding: 3px 8px 3px 0; }
+.${c.routes} th { color: var(--dsw-alias-label-tertiary); font-weight: 500; }
 `

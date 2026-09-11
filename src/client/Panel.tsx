@@ -112,7 +112,10 @@ export function CommunicationPanel(props: CommunicationPanelProps) {
 
   const loadRoutes = useCallback(async () => {
     const result = await call('routes')
+    // Отказ обязан быть виден: молчание здесь выглядит как «заявок нет», а самый
+    // вероятный отказ — непересобранный плагин без подкоманды routes.
     if (result.ok) setRoutes((result.value as { rows: RouteRowView[] }).rows)
+    else setError(result.error.message)
   }, [call])
 
   const openCard = useCallback(async (key: string) => {
@@ -355,7 +358,7 @@ export function CommunicationPanel(props: CommunicationPanelProps) {
         </aside>
       </div>
 
-      <section>
+      <section className={css.routes} aria-label={t('routesTitle')}>
         <h3>{t('routesTitle')}</h3>
         <p>{t('routesHint')}</p>
         {routes === null || routes.length === 0 ? (
