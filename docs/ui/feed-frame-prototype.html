@@ -422,15 +422,44 @@ body {
 .aside .head a:hover { color: var(--dsw-alias-label-primary); }
 .icon { width: 28px; height: 28px; border: 0; border-radius: 6px; background: transparent; color: inherit; cursor: pointer; font-size: 16px; }
 .icon:hover { background: var(--dsw-alias-interactive-bg-hover); }
-.routes { display: flex; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--dsw-alias-border-l1); overflow-x: auto; }
+/* Пилюли переносятся, а не прокручиваются: скрытая за краем метка — это фильтр, которого как бы нет. */
+.routes { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--dsw-alias-border-l1); }
 .pill {
   border: 1px solid var(--dsw-alias-border-l2); background: transparent; color: inherit; font: inherit; font-size: 12px;
   border-radius: 999px; padding: 3px 10px; cursor: pointer; white-space: nowrap;
 }
-.pill[data-active] { background: var(--dsw-alias-brand-primary); color: var(--dsw-alias-brand-primary-invert); border-color: transparent; }
+/* Текст на brand-primary — label-primary-foreground: «invert» в тёмной теме совпадает с самим primary (проверено вычисленными стилями). */
+.pill[data-active] { background: var(--dsw-alias-brand-primary); color: var(--dsw-alias-label-primary-foreground); border-color: transparent; }
 .aside iframe { flex: 1; width: 100%; border: 0; background: var(--dsw-alias-bg-layer-1); }
 .hint { font-size: 12px; color: var(--dsw-alias-label-caption); padding: 8px 12px; border-top: 1px solid var(--dsw-alias-border-l1); }
 .hint a { color: inherit; }
+
+/* модал настроек — по мотивам Modal из ui-primitives */
+.mask { position: fixed; inset: 0; background: var(--dsw-alias-bg-mask-1); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 10; }
+.mask[hidden] { display: none; }
+.dialog { width: min(680px, calc(100vw - 32px)); max-height: calc(100vh - 64px); display: flex; flex-direction: column; background: var(--dsw-alias-bg-layer-3); border: 1px solid var(--dsw-alias-border-l2); border-radius: 14px; box-shadow: 0 12px 40px rgba(0,0,0,.25); }
+.dialog .dh { display: flex; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--dsw-alias-border-l1); }
+.dialog .dh b { font-size: 15px; }
+.dialog .dh small { color: var(--dsw-alias-label-caption); margin-left: 10px; }
+.dialog .dh .icon { margin-left: auto; }
+.dialog .db { overflow: auto; padding: 8px 18px 14px; }
+.dialog .df { display: flex; gap: 8px; justify-content: flex-end; padding: 12px 18px; border-top: 1px solid var(--dsw-alias-border-l1); }
+.btn { border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-2); color: inherit; font: inherit; border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+.btn:hover { background: var(--dsw-alias-interactive-bg-hover); }
+.btn[data-primary] { background: var(--dsw-alias-brand-primary); color: var(--dsw-alias-label-primary-foreground); border-color: transparent; }
+.label { border: 1px solid var(--dsw-alias-border-l1); border-radius: 10px; padding: 10px 12px; margin-top: 10px; }
+.label .lh { display: flex; align-items: center; gap: 8px; }
+.label .lh input { flex: 1; }
+.label .tag { color: var(--dsw-alias-label-caption); font-family: var(--ds-font-family-code); font-size: 12px; white-space: nowrap; }
+.rule { display: flex; align-items: center; gap: 6px; margin-top: 6px; padding-left: 12px; }
+.rule .or { width: 34px; font-size: 11px; color: var(--dsw-alias-label-caption); text-align: right; }
+input, select { font: inherit; color: inherit; background: var(--dsw-alias-bg-layer-1); border: 1px solid var(--dsw-alias-border-l2); border-radius: 7px; padding: 5px 8px; }
+input:focus, select:focus { outline: 2px solid var(--dsw-alias-brand-primary-new-colorprimary-new-color); outline-offset: -1px; }
+.rule input { flex: 1; }
+.add { background: none; border: 0; color: var(--dsw-alias-label-caption); font: inherit; cursor: pointer; padding: 4px 0; }
+.add:hover { color: var(--dsw-alias-label-primary); }
+.rules-hint { font-size: 12px; color: var(--dsw-alias-label-caption); margin: 4px 0 0; }
+.routes .icon { flex: none; margin-left: auto; }
 
 /* панель отладки прототипа — в dsh её нет */
 .debug { position: fixed; left: 212px; bottom: 10px; display: flex; gap: 6px; opacity: .7; }
@@ -476,16 +505,28 @@ body {
       <button class="icon" type="button" id="btn-close" aria-label="Закрыть">×</button>
     </div>
     <div class="routes" id="routes">
-      <button class="pill" type="button" data-route="#/" data-active>Home</button>
-      <button class="pill" type="button" data-route="#/feed.localtest.me/t/контур_развилка">#развилка</button>
-      <button class="pill" type="button" data-route="#/feed.localtest.me/t/контур_приёмка">#приёмка</button>
-      <button class="pill" type="button" data-route="#/notifications">Уведомления</button>
+      <!-- пилюли строятся из настроек меток, см. renderPills() -->
+      <button class="icon" type="button" id="btn-labels" title="Метки ленты" aria-label="Метки ленты">⚙</button>
     </div>
     <iframe id="feed" src="http://127.0.0.1:8083/#/" title="Лента контура (Phanpy)"
       referrerpolicy="no-referrer"></iframe>
     <div class="hint">Пусто или просит войти? Вход делается один раз во вкладке
       <a href="http://127.0.0.1:8083/" target="_blank" rel="noopener">127.0.0.1:8083</a> — фрейм подхватит сам.</div>
   </section>
+</div>
+
+<div class="mask" id="mask" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-label="Метки ленты">
+    <div class="dh"><b>Метки ленты</b><small>метка = хэштег на посте; ставится, если подходит хотя бы одно правило</small>
+      <button class="icon" type="button" id="dlg-close" aria-label="Закрыть">×</button></div>
+    <div class="db" id="labels-body"></div>
+    <div class="df">
+      <button class="btn" type="button" id="btn-add-label">＋ Метка</button>
+      <button class="btn" type="button" id="btn-copy">Скопировать JSON</button>
+      <button class="btn" type="button" id="btn-reset">Сбросить</button>
+      <button class="btn" type="button" data-primary id="btn-done">Готово</button>
+    </div>
+  </div>
 </div>
 
 <div class="debug">
@@ -510,12 +551,113 @@ function setOpen(open) {
 btn.addEventListener('click', () => setOpen(aside.hidden));
 document.getElementById('btn-close').addEventListener('click', () => setOpen(false));
 
+// ---------- метки ----------
+// Та же форма, что у файла communication/labels.json, который читают мост,
+// перенос из Telegram и перемаркировка. Здесь — в localStorage, потому что
+// статическая страница файл не пишет; кнопка «Скопировать JSON» — мост к файлу.
+const KINDS = { account: 'учётка', tag: 'тег на посте', contains: 'содержит', regex: 'регулярка' };
+const DEFAULTS = { labels: [
+  { id: 'разработка', title: 'Разработка', rules: [ { account: 'openhands' }, { account: 'pr_agent' }, { account: 'issue_agent' }, { tag: 'контур_задача' } ] },
+  { id: 'продукт', title: 'Продукт', rules: [ { account: 'product_radar' }, { account: 'problemhunt' } ] },
+  { id: 'маркетинг', title: 'Маркетинг', rules: [ { contains: 'маркетинг' }, { contains: 'продвижен' } ] },
+  { id: 'релизы', title: 'Релизы', rules: [ { account: 'delivery' }, { tag: 'контур_приёмка' }, { contains: 'релиз' } ] },
+  { id: 'gds', title: 'GDS', rules: [ { contains: 'GDS' } ] },
+  { id: 'live', title: 'Live', rules: [ { contains: 'MTS Live' }, { contains: 'МТС Live' }, { contains: 'mts.link' } ] },
+  { id: 'клиенты', title: 'Клиенты', rules: [ { account: 'tg_aleks' }, { account: 'crm_harness' }, { contains: 'клиент' } ] },
+] };
+let config = load();
+let active = null; // id активной метки; null = Home
+
+function load() {
+  try { const raw = localStorage.getItem('feed-labels'); if (raw) return JSON.parse(raw); } catch {}
+  return structuredClone(DEFAULTS);
+}
+function save() { try { localStorage.setItem('feed-labels', JSON.stringify(config)); } catch {} }
+
+// Идентификатор из названия: строчные, пробелы в подчёркивание, только
+// буквы/цифры/подчёркивание — ровно то, что сервер считает хэштегом.
+const slug = (title) => title.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^\p{L}\p{N}_]/gu, '');
+
+function renderPills() {
+  const routes = document.getElementById('routes');
+  for (const p of routes.querySelectorAll('[data-label]')) p.remove();
+  const gear = document.getElementById('btn-labels');
+  const mk = (id, text) => {
+    const b = document.createElement('button');
+    b.className = 'pill'; b.type = 'button'; b.dataset.label = id ?? ''; b.textContent = text;
+    b.toggleAttribute('data-active', (id ?? null) === active);
+    routes.insertBefore(b, gear);
+  };
+  mk(null, 'Все');
+  for (const l of config.labels) mk(l.id, l.title);
+}
 document.getElementById('routes').addEventListener('click', (e) => {
-  const b = e.target.closest('[data-route]');
+  const b = e.target.closest('[data-label]');
   if (!b) return;
-  for (const p of document.querySelectorAll('[data-route]')) p.toggleAttribute('data-active', p === b);
-  frame.src = base + b.dataset.route;
+  // Одна метка — одна лента: объединение тегов сервер игнорирует (проверено),
+  // поэтому переключатель, а не мультивыбор.
+  active = b.dataset.label || null;
+  frame.src = base + (active ? '#/feed.localtest.me/t/' + encodeURIComponent(active) : '#/');
+  renderPills();
 });
+
+// ---------- настройка ----------
+const mask = document.getElementById('mask');
+const body = document.getElementById('labels-body');
+function openDialog() { renderDialog(); mask.hidden = false; }
+function closeDialog() { mask.hidden = true; save(); renderPills(); }
+document.getElementById('btn-labels').addEventListener('click', openDialog);
+document.getElementById('dlg-close').addEventListener('click', closeDialog);
+document.getElementById('btn-done').addEventListener('click', closeDialog);
+mask.addEventListener('click', (e) => { if (e.target === mask) closeDialog(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !mask.hidden) closeDialog(); });
+document.getElementById('btn-reset').addEventListener('click', () => { config = structuredClone(DEFAULTS); renderDialog(); });
+document.getElementById('btn-copy').addEventListener('click', async (e) => {
+  try { await navigator.clipboard.writeText(JSON.stringify(config, null, 2)); e.target.textContent = 'Скопировано'; setTimeout(() => e.target.textContent = 'Скопировать JSON', 1200); } catch {}
+});
+document.getElementById('btn-add-label').addEventListener('click', () => {
+  config.labels.push({ id: '', title: '', rules: [ { contains: '' } ] });
+  renderDialog();
+  body.querySelector('.label:last-child input')?.focus();
+});
+
+function renderDialog() {
+  body.innerHTML = '';
+  config.labels.forEach((l, li) => {
+    const box = document.createElement('div'); box.className = 'label';
+    const head = document.createElement('div'); head.className = 'lh';
+    const title = document.createElement('input'); title.value = l.title; title.placeholder = 'Название метки';
+    const tag = document.createElement('span'); tag.className = 'tag'; tag.textContent = l.id ? '#' + l.id : '#…';
+    title.addEventListener('input', () => { l.title = title.value; l.id = slug(title.value); tag.textContent = l.id ? '#' + l.id : '#…'; });
+    const del = document.createElement('button'); del.className = 'icon'; del.type = 'button'; del.textContent = '×'; del.title = 'Удалить метку';
+    del.addEventListener('click', () => { config.labels.splice(li, 1); renderDialog(); });
+    head.append(title, tag, del); box.append(head);
+
+    l.rules.forEach((r, ri) => {
+      const kind = Object.keys(KINDS).find((k) => k in r) ?? 'contains';
+      const row = document.createElement('div'); row.className = 'rule';
+      const or = document.createElement('span'); or.className = 'or'; or.textContent = ri === 0 ? 'если' : 'или';
+      const sel = document.createElement('select');
+      for (const [k, t] of Object.entries(KINDS)) { const o = document.createElement('option'); o.value = k; o.textContent = t; o.selected = k === kind; sel.append(o); }
+      const val = document.createElement('input'); val.value = r[kind] ?? ''; val.placeholder = { account: 'product_radar', tag: 'контур_приёмка', contains: 'слово или фраза', regex: '\\bGDS\\b' }[kind];
+      const put = () => { for (const k of Object.keys(r)) delete r[k]; r[sel.value] = val.value; };
+      sel.addEventListener('change', () => { put(); renderDialog(); });
+      val.addEventListener('input', put);
+      const rm = document.createElement('button'); rm.className = 'icon'; rm.type = 'button'; rm.textContent = '×'; rm.title = 'Убрать правило';
+      rm.addEventListener('click', () => { l.rules.splice(ri, 1); renderDialog(); });
+      row.append(or, sel, val, rm); box.append(row);
+    });
+    const add = document.createElement('button'); add.className = 'add'; add.type = 'button'; add.textContent = '＋ правило';
+    add.style.marginLeft = '46px';
+    add.addEventListener('click', () => { l.rules.push({ contains: '' }); renderDialog(); });
+    box.append(add);
+    body.append(box);
+  });
+  const hint = document.createElement('p'); hint.className = 'rules-hint';
+  hint.textContent = 'Метка ставится при публикации и перемаркировкой (scripts/relabel.py). Посты с опросом или вложением перемаркировать нельзя — правка убивает опрос; им метки ставятся только при публикации.';
+  body.append(hint);
+}
+renderPills();
 
 // Значок «ждут тебя»: считается ВНЕ фрейма, прямым запросом к ленте по тегу развилки.
 // Так это и будет в плагине — только с узловой половины и с токеном человека; здесь
