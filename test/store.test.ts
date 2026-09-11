@@ -51,6 +51,38 @@ test('внешние идентификаторы канала хранятся 
   assert.equal(item.authorId, '777')
 })
 
+test('заявка несёт вид чата и вычисленный маршрут', () => {
+  const item = toItem(msg(1, 'новость', 0, { chatKind: 'channel' }), { receivedAt: NOW })
+  assert.equal(item.chatKind, 'channel')
+  assert.deepEqual(item.route, ['feed'])
+})
+
+test('переопределение реестра доходит до заявки', () => {
+  const item = toItem(
+    msg(2, 'рабочее', 0, { chatKind: 'channel' }),
+    { receivedAt: NOW, overrides: { dialog: new Set([CHAT]) } },
+  )
+  assert.deepEqual(item.route, ['dialog'])
+})
+
+test('маршрут переживает запись и чтение', () => {
+  const store = new InboxStore(':memory:')
+  store.save(toItem(msg(3, 'новость', 0, { chatKind: 'channel' }), { receivedAt: NOW }))
+  const { item } = store.thread(`telegram:${CHAT}:3`)
+  assert.equal(item.chatKind, 'channel')
+  assert.deepEqual(item.route, ['feed'])
+  store.close()
+})
+
+test('база без новых столбцов догоняется миграцией', () => {
+  const store = new InboxStore(':memory:')
+  // Столбцы уже добавлены конструктором; повторная миграция не должна падать.
+  store.save(toItem(msg(4, 'привет'), { receivedAt: NOW }))
+  const { item } = store.thread(`telegram:${CHAT}:4`)
+  assert.deepEqual(item.route, ['dialog'])
+  store.close()
+})
+
 test('база прошлой версии догоняется без пересоздания', () => {
   const store = new InboxStore(':memory:')
   store.save(toItem(msg(1, 'первое'), { receivedAt: NOW }))

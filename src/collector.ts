@@ -6,6 +6,8 @@
  */
 import type { ChatKind, Item } from './model.js'
 import type { InboxStore } from './store.js'
+import { routeFor } from './routing.js'
+import type { RouteOverrides } from './routing.js'
 
 /** Сообщение канала в форме, которой достаточно коллектору. */
 export interface IncomingMessage {
@@ -41,6 +43,7 @@ export interface CollectorOptions {
   delayBudgetMs?: number
   catchUpLimit?: number
   now?: () => number
+  overrides?: Partial<RouteOverrides>
 }
 
 const LINK_RE = /https?:\/\/[^\s<>"')]+/g
@@ -65,6 +68,8 @@ export function toItem(message: IncomingMessage, options: CollectorOptions & { r
     threadKey: `${channel}:${message.chatId}`,
     author: message.author,
     authorId: message.authorId,
+    chatKind: message.chatKind ?? null,
+    route: routeFor(message.chatKind, message.chatId, options.overrides),
     sentAt: message.sentAt,
     receivedAt: options.receivedAt,
     delayed: options.receivedAt - message.sentAt > budget,
