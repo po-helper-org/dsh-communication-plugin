@@ -11,6 +11,7 @@
 import { TelegramClient } from '@mtcute/node'
 import { NotAuthorizedError } from './errors.js'
 import type { ChannelPort, IncomingMessage } from './collector.js'
+import type { ChatKind } from './model.js'
 
 export interface TelegramOptions {
   apiId: number
@@ -26,14 +27,36 @@ export function telegramOptionsFromEnv(env: NodeJS.ProcessEnv): TelegramOptions 
   return { apiId, apiHash, sessionPath: env.TG_SESSION ?? 'tg.session' }
 }
 
+/**
+ * Собеседник в форме, которой нам достаточно. Структурная заглушка, а не импорт типов
+ * mtcute: адаптер обязан собираться и проверяться без установленного клиента.
+ *
+ * `type` здесь — дискриминатор объединения `User | Chat`, поэтому вид группы читается
+ * из отдельного `chatType`. Проверено по справочнику mtcute 0.28.
+ */
+interface PeerLike {
+  id: number | string
+  displayName?: string
+  type?: 'user' | 'chat'
+  isBot?: boolean
+  chatType?: 'group' | 'supergroup' | 'channel' | 'gigagroup' | 'monoforum'
+}
+
 interface MessageLike {
   id: number
   isService: boolean
   text: string
   date: Date
-  chat: { id: number | string; displayName?: string; type?: 'user' | 'chat' | 'channel' }
+  chat: PeerLike
   sender?: { id?: number | string; displayName?: string }
   media?: { type?: string } | null
+}
+
+/** Сводит два уровня mtcute в один вид чата. `null` — форма неизвестна, выдумывать нельзя. */
+export function toChatKind(chat: PeerLike): ChatKind | null {
+  if (chat.type === 'user') return chat.isBot === true ? 'bot' : 'user'
+  if (chat.type === 'chat') return chat.chatType ?? null
+  return null
 }
 
 export function toIncoming(message: MessageLike): IncomingMessage {
@@ -47,7 +70,7 @@ export function toIncoming(message: MessageLike): IncomingMessage {
     text: message.text,
     hasMedia: message.media != null && message.media.type !== 'unsupported',
     isService: message.isService,
-    chatKind: message.chat.type,
+    chatKind: toChatKind(message.chat) ?? undefined,
   }
 }
 

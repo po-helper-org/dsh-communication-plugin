@@ -90,7 +90,9 @@ try {
       console.error(`Чтение ${ref} прервано: ${message}`)
       store.setMeta('collector.lastError', `${ref}: ${message}`)
     },
-    privateToo ? (message) => message.chatKind === 'user' : undefined,
+    // Бот теперь отличим от человека, но в отбор попадает по-прежнему: уведомления
+    // от ботов приходят в личку и разбора требуют так же.
+    privateToo ? (message) => message.chatKind === 'user' || message.chatKind === 'bot' : undefined,
   )
   const added = store.count('inbox') - before
   console.log(`Непрочитанное прочитано: ${added} новых заявок в Inbox. Слушаем поток, Ctrl+C — выход.`)

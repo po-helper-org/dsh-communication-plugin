@@ -66,3 +66,14 @@ export interface CollectorStatus {
   watching: string[]
   lastError: string | null
 }
+
+/**
+ * Вид чата в терминах Telegram, сведённый в один плоский набор.
+ *
+ * В mtcute это два разных места: `Peer` — объединение `User | Chat`, и `.type` там
+ * дискриминатор объединения (`"user"` либо `"chat"`), а настоящий вид группы лежит
+ * в `Chat.chatType`. Потребителю раздела важен вид разговора, а не класс библиотеки,
+ * поэтому оба уровня сводятся сюда.
+ */
+export const CHAT_KINDS = ['user', 'bot', 'group', 'supergroup', 'channel', 'gigagroup', 'monoforum'] as const
+export type ChatKind = (typeof CHAT_KINDS)[number]

@@ -4,7 +4,7 @@
  * Клиент Telegram приходит портом, а не импортируется здесь: логика сбора проверяется
  * без сети и без аккаунта, а живой mtcute подставляется в `telegram.ts`.
  */
-import type { Item } from './model.js'
+import type { ChatKind, Item } from './model.js'
 import type { InboxStore } from './store.js'
 
 /** Сообщение канала в форме, которой достаточно коллектору. */
@@ -19,8 +19,8 @@ export interface IncomingMessage {
   text: string
   hasMedia: boolean
   isService: boolean
-  /** Тип собеседника: личка, группа или канал. Нужен правилам отбора, в заявку не идёт. */
-  chatKind?: 'user' | 'chat' | 'channel'
+  /** Вид собеседника. Нужен правилам отбора и маршрутизации, в заявку идёт как есть. */
+  chatKind?: ChatKind
 }
 
 /** Порт клиента канала. Ровно две способности: прочитать историю и слушать поток. */
