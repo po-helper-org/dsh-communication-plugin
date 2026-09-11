@@ -372,7 +372,9 @@ export function CommunicationPanel(props: CommunicationPanelProps) {
             </thead>
             <tbody>
               {routes.map((row) => (
-                <tr key={`${row.chatId}:${row.route}`}>
+                // Ключ повторяет группировку хранилища: переименованный чат даёт две
+                // строки с одним chatId и маршрутом, различимые только заголовком.
+                <tr key={`${row.chatId}:${row.chatTitle ?? ''}:${row.chatKind ?? ''}:${row.route}`}>
                   <td>{row.chatTitle ?? row.chatId}</td>
                   <td>{row.chatKind ?? '—'}</td>
                   <td>{routeLabel(row.route, t)}</td>
