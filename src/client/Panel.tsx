@@ -29,6 +29,15 @@ export type CommunicationPanelProps =
 
 type Translate = (key: CommunicationLocaleKey) => string
 
+/** Локальная форма строки распределения — панель не импортирует форму из `store.ts`. */
+interface RouteRowView {
+  chatId: string
+  chatTitle: string | null
+  chatKind: string | null
+  route: string
+  count: number
+}
+
 const LABEL_BY_ID = new Map(LABELS.map((label) => [label.id as string, label]))
 
 /** Время сообщения: дата и часы, ровно то, что нужно для решения. */
@@ -41,6 +50,14 @@ function ago(ms: number, now: number): string {
   if (minutes < 60) return `${minutes} мин`
   const hours = Math.round(minutes / 60)
   return hours < 24 ? `${hours} ч` : `${Math.round(hours / 24)} дн`
+}
+
+/** Подпись маршрута: куда после переезда пойдёт заявка из этого чата. */
+const routeLabel = (route: string, t: Translate): string => {
+  if (route === 'dialog') return t('routeDialog')
+  if (route === 'feed') return t('routeFeed')
+  if (route === 'dialog+feed') return t('routeBoth')
+  return t('routeUnknown')
 }
 
 function initials(name: string | null): string {
@@ -86,10 +103,16 @@ export function CommunicationPanel(props: CommunicationPanelProps) {
   const [filter, setFilter] = useState<string | null>(null)
   const [picker, setPicker] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [routes, setRoutes] = useState<RouteRowView[] | null>(null)
 
   const reload = useCallback(async () => {
     const result = await call('list')
     if (result.ok) { setPage(result.value as InboxPage); setError(null) } else setError(result.error.message)
+  }, [call])
+
+  const loadRoutes = useCallback(async () => {
+    const result = await call('routes')
+    if (result.ok) setRoutes((result.value as { rows: RouteRowView[] }).rows)
   }, [call])
 
   const openCard = useCallback(async (key: string) => {
@@ -102,7 +125,8 @@ export function CommunicationPanel(props: CommunicationPanelProps) {
     setThread(null)
     setFilter(null)
     void reload()
-  }, [open, reload])
+    void loadRoutes()
+  }, [open, reload, loadRoutes])
 
   // Первая заявка открывается сама: раздел без выбранной карточки бесполезен.
   useEffect(() => {
@@ -330,6 +354,35 @@ export function CommunicationPanel(props: CommunicationPanelProps) {
           </div>
         </aside>
       </div>
+
+      <section>
+        <h3>{t('routesTitle')}</h3>
+        <p>{t('routesHint')}</p>
+        {routes === null || routes.length === 0 ? (
+          <p>{t('routesEmpty')}</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>{t('routesColumnChat')}</th>
+                <th>{t('routesColumnKind')}</th>
+                <th>{t('routesColumnRoute')}</th>
+                <th>{t('routesColumnCount')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {routes.map((row) => (
+                <tr key={`${row.chatId}:${row.route}`}>
+                  <td>{row.chatTitle ?? row.chatId}</td>
+                  <td>{row.chatKind ?? '—'}</td>
+                  <td>{routeLabel(row.route, t)}</td>
+                  <td>{row.count}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
     </div>
   )
 }
