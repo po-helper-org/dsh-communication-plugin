@@ -19,7 +19,7 @@ export interface IncomingMessage {
   text: string
   hasMedia: boolean
   isService: boolean
-  /** Вид собеседника. Нужен правилам отбора и маршрутизации, в заявку идёт как есть. */
+  /** Вид собеседника. Нужен правилам отбора и маршрутизации. */
   chatKind?: ChatKind
 }
 
