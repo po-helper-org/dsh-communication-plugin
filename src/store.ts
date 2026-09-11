@@ -8,7 +8,7 @@ import { DatabaseSync } from 'node:sqlite'
 import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { ItemNotFoundError, StoreUnavailableError } from './errors.js'
-import type { Item, ItemRow, State, Thread } from './model.js'
+import type { Item, ItemRow, Route, RouteRow, State, Thread } from './model.js'
 
 const SCHEMA = `
   CREATE TABLE IF NOT EXISTS items (
@@ -20,6 +20,8 @@ const SCHEMA = `
     thread_key  TEXT NOT NULL,
     author      TEXT,
     author_id   TEXT,
+    chat_kind   TEXT,
+    route       TEXT,
     sent_at     INTEGER NOT NULL,
     received_at INTEGER NOT NULL,
     delayed     INTEGER NOT NULL DEFAULT 0,
@@ -51,6 +53,8 @@ interface Row {
   thread_key: string
   author: string | null
   author_id: string | null
+  chat_kind: string | null
+  route: string | null
   sent_at: number
   received_at: number
   delayed: number
@@ -77,6 +81,8 @@ function toItem(row: Row): Item {
     threadKey: row.thread_key,
     author: row.author,
     authorId: row.author_id,
+    chatKind: row.chat_kind as Item['chatKind'],
+    route: splitList(row.route) as Route[],
     sentAt: Number(row.sent_at),
     receivedAt: Number(row.received_at),
     delayed: row.delayed === 1,
@@ -126,6 +132,8 @@ export class InboxStore {
     )
     if (!columns.has('author_id')) this.db.exec('ALTER TABLE items ADD COLUMN author_id TEXT')
     if (!columns.has('labels')) this.db.exec('ALTER TABLE items ADD COLUMN labels TEXT')
+    if (!columns.has('chat_kind')) this.db.exec('ALTER TABLE items ADD COLUMN chat_kind TEXT')
+    if (!columns.has('route')) this.db.exec('ALTER TABLE items ADD COLUMN route TEXT')
   }
 
   /**
@@ -135,12 +143,14 @@ export class InboxStore {
   save(item: Item): boolean {
     const result = this.db.prepare(`
       INSERT INTO items (key, channel, chat_id, chat_title, msg_id, thread_key, author, author_id,
-                         sent_at, received_at, delayed, text, has_media, links, state, class, labels)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                         chat_kind, route, sent_at, received_at, delayed, text, has_media, links,
+                         state, class, labels)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       ON CONFLICT(key) DO NOTHING
     `).run(
       item.key, item.channel, item.chatId, item.chatTitle, item.msgId, item.threadKey,
-      item.author, item.authorId, item.sentAt, item.receivedAt, item.delayed ? 1 : 0, item.text,
+      item.author, item.authorId, item.chatKind, item.route.join('\n'),
+      item.sentAt, item.receivedAt, item.delayed ? 1 : 0, item.text,
       item.hasMedia ? 1 : 0, item.links.length === 0 ? null : item.links.join('\n'),
       item.state, item.class, item.labels.length === 0 ? null : item.labels.join('\n'),
     )
@@ -173,6 +183,33 @@ export class InboxStore {
   count(state: State = 'inbox'): number {
     const row = this.db.prepare('SELECT COUNT(*) AS n FROM items WHERE state = ?').get(state) as { n: number }
     return Number(row.n)
+  }
+
+  /**
+   * Распределение заявок по чатам и маршрутам. Отвечает на единственный вопрос
+   * этого этапа: правильно ли размечен поток. Группировка по уже сохранённой строке
+   * маршрута, поэтому канонический порядок из `routeFor` здесь и окупается.
+   */
+  routeDistribution(): RouteRow[] {
+    const rows = this.db.prepare(`
+      SELECT chat_id, chat_title, chat_kind, COALESCE(route, '') AS route, COUNT(*) AS n
+      FROM items
+      GROUP BY chat_id, chat_title, chat_kind, route
+      ORDER BY n DESC
+    `).all() as Array<{
+      chat_id: string
+      chat_title: string | null
+      chat_kind: string | null
+      route: string
+      n: number
+    }>
+    return rows.map((row) => ({
+      chatId: row.chat_id,
+      chatTitle: row.chat_title,
+      chatKind: row.chat_kind,
+      route: row.route.split('\n').join('+'),
+      count: Number(row.n),
+    }))
   }
 
   /** Карточка: сама заявка и соседи по диалогу. В сеть за тредом ходить не нужно. */

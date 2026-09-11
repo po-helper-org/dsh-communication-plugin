@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url'
 import { Collector } from '../lib/collector.js'
 import { mergeEnv, readEnvFile } from '../lib/env-file.js'
 import { InboxStore } from '../lib/store.js'
+import { parseOverrides } from '../lib/routing.js'
 import { TelegramChannel, telegramOptionsFromEnv } from '../lib/telegram.js'
 
 const env = mergeEnv(readEnvFile(fileURLToPath(new URL('../.env', import.meta.url))), process.env)
@@ -81,7 +82,10 @@ try {
     console.error(`Ошибка потока: ${message}`)
   })
 
-  const collector = new Collector(store, channel, { delayBudgetMs: budgetMs })
+  const collector = new Collector(store, channel, {
+    delayBudgetMs: budgetMs,
+    overrides: parseOverrides(env),
+  })
   const before = store.count('inbox')
   if (privateToo) console.log('Личные сообщения принимаются из любых диалогов, включая новые')
   stop = await collector.start(
@@ -90,7 +94,9 @@ try {
       console.error(`Чтение ${ref} прервано: ${message}`)
       store.setMeta('collector.lastError', `${ref}: ${message}`)
     },
-    privateToo ? (message) => message.chatKind === 'user' : undefined,
+    // Бот теперь отличим от человека, но в отбор попадает по-прежнему: уведомления
+    // от ботов приходят в личку и разбора требуют так же.
+    privateToo ? (message) => message.chatKind === 'user' || message.chatKind === 'bot' : undefined,
   )
   const added = store.count('inbox') - before
   console.log(`Непрочитанное прочитано: ${added} новых заявок в Inbox. Слушаем поток, Ctrl+C — выход.`)

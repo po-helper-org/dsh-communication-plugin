@@ -41,6 +41,18 @@ export const ru = {
   none: 'не указан',
   unknownAuthor: 'Без автора',
   unknownChat: 'Без чата',
+
+  routesTitle: 'Разметка потока',
+  routesHint: 'Куда пойдёт заявка после переезда. Проверьте, что чаты размечены верно',
+  routesEmpty: 'Заявок пока нет — разметку не на чем показать',
+  routeDialog: 'диалоги',
+  routeFeed: 'лента',
+  routeBoth: 'диалоги + лента',
+  routeUnknown: 'не размечено',
+  routesColumnChat: 'Чат',
+  routesColumnKind: 'Вид',
+  routesColumnRoute: 'Маршрут',
+  routesColumnCount: 'Заявок',
 } as const
 
 export type CommunicationLocaleKey = keyof typeof ru

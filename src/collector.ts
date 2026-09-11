@@ -4,8 +4,10 @@
  * Клиент Telegram приходит портом, а не импортируется здесь: логика сбора проверяется
  * без сети и без аккаунта, а живой mtcute подставляется в `telegram.ts`.
  */
-import type { Item } from './model.js'
+import type { ChatKind, Item } from './model.js'
 import type { InboxStore } from './store.js'
+import { routeFor } from './routing.js'
+import type { RouteOverrides } from './routing.js'
 
 /** Сообщение канала в форме, которой достаточно коллектору. */
 export interface IncomingMessage {
@@ -19,8 +21,8 @@ export interface IncomingMessage {
   text: string
   hasMedia: boolean
   isService: boolean
-  /** Тип собеседника: личка, группа или канал. Нужен правилам отбора, в заявку не идёт. */
-  chatKind?: 'user' | 'chat' | 'channel'
+  /** Вид собеседника. Нужен правилам отбора и маршрутизации. */
+  chatKind?: ChatKind
 }
 
 /** Порт клиента канала. Ровно две способности: прочитать историю и слушать поток. */
@@ -41,6 +43,7 @@ export interface CollectorOptions {
   delayBudgetMs?: number
   catchUpLimit?: number
   now?: () => number
+  overrides?: Partial<RouteOverrides>
 }
 
 const LINK_RE = /https?:\/\/[^\s<>"')]+/g
@@ -65,6 +68,8 @@ export function toItem(message: IncomingMessage, options: CollectorOptions & { r
     threadKey: `${channel}:${message.chatId}`,
     author: message.author,
     authorId: message.authorId,
+    chatKind: message.chatKind ?? null,
+    route: routeFor(message.chatKind, message.chatId, options.overrides),
     sentAt: message.sentAt,
     receivedAt: options.receivedAt,
     delayed: options.receivedAt - message.sentAt > budget,

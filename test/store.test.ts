@@ -51,6 +51,38 @@ test('внешние идентификаторы канала хранятся 
   assert.equal(item.authorId, '777')
 })
 
+test('заявка несёт вид чата и вычисленный маршрут', () => {
+  const item = toItem(msg(1, 'новость', 0, { chatKind: 'channel' }), { receivedAt: NOW })
+  assert.equal(item.chatKind, 'channel')
+  assert.deepEqual(item.route, ['feed'])
+})
+
+test('переопределение реестра доходит до заявки', () => {
+  const item = toItem(
+    msg(2, 'рабочее', 0, { chatKind: 'channel' }),
+    { receivedAt: NOW, overrides: { dialog: new Set([CHAT]) } },
+  )
+  assert.deepEqual(item.route, ['dialog'])
+})
+
+test('маршрут переживает запись и чтение', () => {
+  const store = new InboxStore(':memory:')
+  store.save(toItem(msg(3, 'новость', 0, { chatKind: 'channel' }), { receivedAt: NOW }))
+  const { item } = store.thread(`telegram:${CHAT}:3`)
+  assert.equal(item.chatKind, 'channel')
+  assert.deepEqual(item.route, ['feed'])
+  store.close()
+})
+
+test('база без новых столбцов догоняется миграцией', () => {
+  const store = new InboxStore(':memory:')
+  // Столбцы уже добавлены конструктором; повторная миграция не должна падать.
+  store.save(toItem(msg(4, 'привет'), { receivedAt: NOW }))
+  const { item } = store.thread(`telegram:${CHAT}:4`)
+  assert.deepEqual(item.route, ['dialog'])
+  store.close()
+})
+
 test('база прошлой версии догоняется без пересоздания', () => {
   const store = new InboxStore(':memory:')
   store.save(toItem(msg(1, 'первое'), { receivedAt: NOW }))
@@ -145,6 +177,36 @@ test('канал отдаёт список, карточку, разбор и н
   assert.equal(dispatch(store, status, 'show', { key: 'нет-такого' }).ok, false)
   assert.equal(dispatch(store, status, 'ерунда', {}).ok, false)
   assert.equal(dispatch(store, status, 'show', {}).ok, false)
+  store.close()
+})
+
+test('распределение группирует заявки по чату и маршруту', () => {
+  const store = new InboxStore(':memory:')
+  store.save(toItem(msg(1, 'новость', 0, { chatKind: 'channel' }), { receivedAt: NOW }))
+  store.save(toItem(msg(2, 'ещё новость', 0, { chatKind: 'channel' }), { receivedAt: NOW }))
+  store.save(toItem(
+    msg(3, 'рабочее', 0, { chatId: '-777', chatTitle: 'Команда', chatKind: 'supergroup' }),
+    { receivedAt: NOW },
+  ))
+  const rows = store.routeDistribution()
+  const feed = rows.find((row) => row.route === 'feed')
+  const dialog = rows.find((row) => row.route === 'dialog')
+  assert.equal(feed?.count, 2)
+  assert.equal(feed?.chatKind, 'channel')
+  assert.equal(dialog?.count, 1)
+  assert.equal(dialog?.chatTitle, 'Команда')
+  store.close()
+})
+
+test('подкоманда routes отдаёт распределение через канал', () => {
+  const store = new InboxStore(':memory:')
+  store.save(toItem(msg(1, 'новость', 0, { chatKind: 'channel' }), { receivedAt: NOW }))
+  const result = dispatch(store, status, 'routes', {})
+  assert.equal(result.ok, true)
+  if (!result.ok) return
+  const { rows } = result.value as { rows: Array<{ route: string; count: number }> }
+  assert.equal(rows.length, 1)
+  assert.equal(rows[0].route, 'feed')
   store.close()
 })
 

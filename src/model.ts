@@ -23,6 +23,13 @@ export interface Item {
    * сопоставление с внешней системой держится на нём (см. docs/PRINCIPLES.md).
    */
   authorId: string | null
+  /** Вид чата на момент сбора. `null` — Telegram не сообщил форму. */
+  chatKind: ChatKind | null
+  /**
+   * Куда заявке идти. Набор, а не одно значение: рабочая группа может одновременно
+   * быть и разговором, и содержимым ленты.
+   */
+  route: Route[]
   sentAt: number
   receivedAt: number
   /** Собрано позже бюджета задержки: машина спала или не было сети. */
@@ -65,4 +72,35 @@ export interface CollectorStatus {
   authorized: boolean
   watching: string[]
   lastError: string | null
+}
+
+/**
+ * Вид чата в терминах Telegram, сведённый в один плоский набор.
+ *
+ * В mtcute это два разных места: `Peer` — объединение `User | Chat`, и `.type` там
+ * дискриминатор объединения (`"user"` либо `"chat"`), а настоящий вид группы лежит
+ * в `Chat.chatType`. Потребителю раздела важен вид разговора, а не класс библиотеки,
+ * поэтому оба уровня сводятся сюда.
+ */
+export const CHAT_KINDS = ['user', 'bot', 'group', 'supergroup', 'channel', 'gigagroup', 'monoforum'] as const
+export type ChatKind = (typeof CHAT_KINDS)[number]
+
+/**
+ * Куда уходит заявка. `dialog` — система диалогов, `feed` — лента.
+ * Порядок значений канонический: по нему маршруты сортируются перед хранением,
+ * поэтому одинаковый набор всегда даёт одинаковую строку и группируется без сюрпризов.
+ */
+export const ROUTES = ['dialog', 'feed'] as const
+export type Route = (typeof ROUTES)[number]
+
+/**
+ * Строка распределения: сколько заявок из какого чата каким маршрутом ушло.
+ * Нужна ровно для проверки разметки глазами перед переездом.
+ */
+export interface RouteRow {
+  chatId: string
+  chatTitle: string | null
+  chatKind: string | null
+  route: string
+  count: number
 }
