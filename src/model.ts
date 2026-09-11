@@ -92,3 +92,15 @@ export type ChatKind = (typeof CHAT_KINDS)[number]
  */
 export const ROUTES = ['dialog', 'feed'] as const
 export type Route = (typeof ROUTES)[number]
+
+/**
+ * Строка распределения: сколько заявок из какого чата каким маршрутом ушло.
+ * Нужна ровно для проверки разметки глазами перед переездом.
+ */
+export interface RouteRow {
+  chatId: string
+  chatTitle: string | null
+  chatKind: string | null
+  route: string
+  count: number
+}

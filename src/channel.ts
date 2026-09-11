@@ -1,6 +1,6 @@
 /** Канал раздела. Одна регистрация, подкоманды разбираются внутри. */
 import { CommunicationError, ItemNotFoundError } from './errors.js'
-import type { CollectorStatus, ItemRow, Thread } from './model.js'
+import type { CollectorStatus, ItemRow, RouteRow, Thread } from './model.js'
 import type { InboxStore } from './store.js'
 
 export const COMMUNICATION_CHANNEL = '/communication'
@@ -67,7 +67,7 @@ export function dispatch(
   status: () => CollectorStatus,
   endpoint: string,
   payload: unknown,
-): RpcResult<InboxPage | Thread | { done: boolean } | { labels: string[] }> {
+): RpcResult<InboxPage | Thread | { done: boolean } | { labels: string[] } | { rows: RouteRow[] }> {
   try {
     switch (endpoint) {
       case 'list':
@@ -80,6 +80,8 @@ export function dispatch(
         const { key, label, on } = labelOf(payload)
         return ok({ labels: store.setLabel(key, label, on) })
       }
+      case 'routes':
+        return ok({ rows: store.routeDistribution() })
       default:
         return fail('unknown-endpoint', `неизвестная подкоманда канала: ${endpoint}`)
     }

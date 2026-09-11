@@ -8,7 +8,7 @@ import { DatabaseSync } from 'node:sqlite'
 import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { ItemNotFoundError, StoreUnavailableError } from './errors.js'
-import type { Item, ItemRow, Route, State, Thread } from './model.js'
+import type { Item, ItemRow, Route, RouteRow, State, Thread } from './model.js'
 
 const SCHEMA = `
   CREATE TABLE IF NOT EXISTS items (
@@ -183,6 +183,33 @@ export class InboxStore {
   count(state: State = 'inbox'): number {
     const row = this.db.prepare('SELECT COUNT(*) AS n FROM items WHERE state = ?').get(state) as { n: number }
     return Number(row.n)
+  }
+
+  /**
+   * Распределение заявок по чатам и маршрутам. Отвечает на единственный вопрос
+   * этого этапа: правильно ли размечен поток. Группировка по уже сохранённой строке
+   * маршрута, поэтому канонический порядок из `routeFor` здесь и окупается.
+   */
+  routeDistribution(): RouteRow[] {
+    const rows = this.db.prepare(`
+      SELECT chat_id, chat_title, chat_kind, COALESCE(route, '') AS route, COUNT(*) AS n
+      FROM items
+      GROUP BY chat_id, chat_title, chat_kind, route
+      ORDER BY n DESC
+    `).all() as Array<{
+      chat_id: string
+      chat_title: string | null
+      chat_kind: string | null
+      route: string
+      n: number
+    }>
+    return rows.map((row) => ({
+      chatId: row.chat_id,
+      chatTitle: row.chat_title,
+      chatKind: row.chat_kind,
+      route: row.route.split('\n').join('+'),
+      count: Number(row.n),
+    }))
   }
 
   /** Карточка: сама заявка и соседи по диалогу. В сеть за тредом ходить не нужно. */

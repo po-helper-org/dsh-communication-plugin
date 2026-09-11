@@ -180,6 +180,36 @@ test('канал отдаёт список, карточку, разбор и н
   store.close()
 })
 
+test('распределение группирует заявки по чату и маршруту', () => {
+  const store = new InboxStore(':memory:')
+  store.save(toItem(msg(1, 'новость', 0, { chatKind: 'channel' }), { receivedAt: NOW }))
+  store.save(toItem(msg(2, 'ещё новость', 0, { chatKind: 'channel' }), { receivedAt: NOW }))
+  store.save(toItem(
+    msg(3, 'рабочее', 0, { chatId: '-777', chatTitle: 'Команда', chatKind: 'supergroup' }),
+    { receivedAt: NOW },
+  ))
+  const rows = store.routeDistribution()
+  const feed = rows.find((row) => row.route === 'feed')
+  const dialog = rows.find((row) => row.route === 'dialog')
+  assert.equal(feed?.count, 2)
+  assert.equal(feed?.chatKind, 'channel')
+  assert.equal(dialog?.count, 1)
+  assert.equal(dialog?.chatTitle, 'Команда')
+  store.close()
+})
+
+test('подкоманда routes отдаёт распределение через канал', () => {
+  const store = new InboxStore(':memory:')
+  store.save(toItem(msg(1, 'новость', 0, { chatKind: 'channel' }), { receivedAt: NOW }))
+  const result = dispatch(store, status, 'routes', {})
+  assert.equal(result.ok, true)
+  if (!result.ok) return
+  const { rows } = result.value as { rows: Array<{ route: string; count: number }> }
+  assert.equal(rows.length, 1)
+  assert.equal(rows[0].route, 'feed')
+  store.close()
+})
+
 test('сводка по задержке считает перцентили по ближайшему рангу', () => {
   const summary = summarize([1000, 2000, 3000, 4000, 400_000], 300_000)
   assert.equal(summary.count, 5)
