@@ -472,6 +472,19 @@ body {
 .btn:disabled { opacity: .45; cursor: default; }
 .btn[data-primary] { background: var(--dsw-alias-brand-primary); color: var(--dsw-alias-label-primary-foreground); border-color: transparent; }
 
+/* поля подключения — по мотивам fields.tsx (ValueField / SecretField) */
+.fields { display: flex; flex-direction: column; gap: 10px; padding: 12px 0 4px; border-bottom: 1px solid var(--dsw-alias-border-l1); }
+.field { display: grid; grid-template-columns: 220px 1fr; gap: 12px; align-items: start; }
+.field label { font-size: 13px; padding-top: 6px; }
+.field .hint { display: block; font-size: 12px; color: var(--dsw-alias-label-caption); margin-top: 2px; }
+.field input { width: 100%; }
+.field .row { display: flex; gap: 6px; }
+.field .row input { flex: 1; }
+.status { font-size: 12px; margin-top: 4px; }
+.status[data-ok] { color: var(--dsw-static-green-500); }
+.status[data-bad] { color: var(--dsw-static-red-500); }
+.subhead { font-size: 13px; font-weight: 600; margin: 14px 0 0; }
+
 /* редактор меток внутри карточки */
 .label { border: 1px solid var(--dsw-alias-border-l1); border-radius: 10px; padding: 10px 12px; margin-top: 10px; }
 .label .lh { display: flex; align-items: center; gap: 8px; }
@@ -571,6 +584,16 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--dsw-alias-b
                 <span class="chev">⌄</span>
               </button>
               <div class="cbody" id="our-body">
+                <div class="fields">
+                  <div class="field"><label for="f-client">Адрес ленты (фрейм)<span class="hint">Клиент Phanpy. Только с 127.0.0.1 — иначе фрейм не увидит вход</span></label>
+                    <div><input id="f-client" placeholder="http://127.0.0.1:8083"></div></div>
+                  <div class="field"><label for="f-instance">Инстанс<span class="hint">Сервер ленты, к которому подключён клиент</span></label>
+                    <div><input id="f-instance" placeholder="https://feed.localtest.me"></div></div>
+                  <div class="field"><label for="f-token">Токен человека<span class="hint">Выдаёт <code>scripts/get_tokens.sh aleks</code>. Фрейм входит им сам — без страницы входа</span></label>
+                    <div><div class="row"><input id="f-token" type="password" placeholder="••••••••" autocomplete="off"><button class="btn" type="button" id="f-check">Проверить</button></div>
+                    <div class="status" id="f-status"></div></div></div>
+                </div>
+                <p class="subhead">Метки</p>
                 <div id="labels-body"></div>
                 <div class="cfoot">
                   <button class="add export" type="button" id="btn-copy">Скопировать JSON</button>
@@ -600,7 +623,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--dsw-alias-b
 const aside = document.getElementById('aside');
 const btn = document.getElementById('btn-feed');
 const frame = document.getElementById('feed');
-const base = 'http://127.0.0.1:8083/';
+let base = 'http://127.0.0.1:8083/'; // переопределяется из настроек ниже, после загрузки config
 
 function setOpen(open) {
   aside.hidden = !open;
@@ -624,12 +647,18 @@ const DEFAULTS = { labels: [
   { id: 'live', title: 'Live', rules: [ { contains: 'MTS Live' }, { contains: 'mts.link' }, { prompt: 'Переписка с партнёром MTS Live: созвоны, договорённости, сроки интеграции — даже если слово «Live» в тексте не встречается' } ] },
   { id: 'клиенты', title: 'Клиенты', rules: [ { account: 'tg_aleks' }, { account: 'crm_harness' }, { contains: 'клиент' } ] },
 ] };
+// Подключение хранится рядом с метками: одна карточка — одна форма — одно
+// «Сохранить». Токен в прототипе лежит в localStorage; в плагине — у узловой
+// половины, в браузер он не уходит.
+const CONN_DEFAULTS = { clientUrl: 'http://127.0.0.1:8083', instanceUrl: 'https://feed.localtest.me', token: '' };
 let config = load();
 let active = null; // id активной метки; null = Home
+base = (config.conn?.clientUrl || 'http://127.0.0.1:8083').replace(/\/$/, '') + '/';
+if (frame.src !== base + '#/') frame.src = base + '#/';
 
 function load() {
-  try { const raw = localStorage.getItem('feed-labels'); if (raw) return JSON.parse(raw); } catch {}
-  return structuredClone(DEFAULTS);
+  try { const raw = localStorage.getItem('feed-labels'); if (raw) return { ...structuredClone(DEFAULTS), conn: CONN_DEFAULTS, ...JSON.parse(raw) }; } catch {}
+  return { ...structuredClone(DEFAULTS), conn: { ...CONN_DEFAULTS } };
 }
 function save() { try { localStorage.setItem('feed-labels', JSON.stringify(config)); } catch {} }
 
@@ -688,6 +717,25 @@ document.getElementById('our-head').addEventListener('click', () => {
 });
 document.getElementById('btn-save').addEventListener('click', () => {
   config = structuredClone(draft); save(); renderPills(); refreshState();
+  const nextBase = (config.conn.clientUrl || CONN_DEFAULTS.clientUrl).replace(/\/$/, '') + '/';
+  if (nextBase !== base) { base = nextBase; frame.src = base + '#/'; }
+});
+for (const [id, key] of [['f-client', 'clientUrl'], ['f-instance', 'instanceUrl'], ['f-token', 'token']]) {
+  document.getElementById(id).addEventListener('input', (e) => { draft.conn[key] = e.target.value; refreshState(); });
+}
+// «Проверить» ходит в инстанс сам — в прототипе из браузера (нужен доверенный
+// сертификат), в плагине это делает узловая половина и отдаёт только итог.
+document.getElementById('f-check').addEventListener('click', async () => {
+  const st = document.getElementById('f-status');
+  st.removeAttribute('data-ok'); st.removeAttribute('data-bad'); st.textContent = 'проверяю…';
+  try {
+    const r = await fetch(draft.conn.instanceUrl.replace(/\/$/, '') + '/api/v1/accounts/verify_credentials', { headers: { Authorization: 'Bearer ' + draft.conn.token } });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const a = await r.json();
+    st.setAttribute('data-ok', ''); st.textContent = '@' + a.acct + ' — токен принят, фрейм войдёт этой учёткой';
+  } catch (e) {
+    st.setAttribute('data-bad', ''); st.textContent = 'не принят: ' + e.message;
+  }
 });
 document.getElementById('btn-discard').addEventListener('click', () => { draft = structuredClone(config); renderCard(); });
 document.getElementById('btn-copy').addEventListener('click', async (e) => {
@@ -704,6 +752,10 @@ const PLACEHOLDER = {
   prompt: 'Переписка с партнёром MTS Live: созвоны, договорённости, сроки интеграции — даже если слова «Live» в тексте нет',
 };
 function renderCard() {
+  document.getElementById('f-client').value = draft.conn.clientUrl;
+  document.getElementById('f-instance').value = draft.conn.instanceUrl;
+  document.getElementById('f-token').value = draft.conn.token;
+  document.getElementById('f-status').textContent = '';
   body.innerHTML = '';
   draft.labels.forEach((l, li) => {
     const box = document.createElement('div'); box.className = 'label';
