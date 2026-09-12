@@ -147,7 +147,13 @@ export function apply(ctx: ClientContext): void {
   ))
 }
 
-/** Кнопка раздела в подвале левой панели: переключает общий со столбцом стор видимости. */
+/**
+ * Кнопка раздела в подвале левой панели: переключает общий со столбцом стор видимости.
+ * Иконка — своя, в стиле набора харнесса (outline, currentColor, viewBox 16), тем же
+ * размером, что у соседних разделов (16 в широкой панели, 18 в рейке): символ ✉ шрифтом
+ * стоял не по сетке и был не той величины, а в наборе харнесса нет ни конверта, ни
+ * пузыря без плюса — `IconNewChatOutline16` читается как «новый чат».
+ */
 function InboxButton({ t, useStore, actions, wide }: PropsStore<PanelStoreHandle> & {
   t: (key: CommunicationLocaleKey) => string
   wide: boolean
@@ -163,9 +169,22 @@ function InboxButton({ t, useStore, actions, wide }: PropsStore<PanelStoreHandle
         aria-label={t('nav')}
         onClick={() => { actions.toggle() }}
       >
-        <span aria-hidden>✉</span>
+        <IconChatOutline size={wide ? 16 : 18} />
         {wide && <span className={css.navBadgeLabel}>{t('nav')}</span>}
       </button>
     </div>
+  )
+}
+
+/** Пузырь сообщения в стиле иконок харнесса: контур 1.3px, скруглённый хвост слева внизу. */
+function IconChatOutline({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path
+        d="M8 1.75c3.59 0 6.25 2.44 6.25 5.5S11.59 12.75 8 12.75c-.7 0-1.37-.09-2-.27L2.6 14.1l.63-2.98C2.26 10.2 1.75 8.98 1.75 7.25c0-3.06 2.66-5.5 6.25-5.5Z"
+        stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"
+      />
+      <path d="M5.25 7.25h5.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
   )
 }

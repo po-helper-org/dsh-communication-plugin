@@ -62,20 +62,24 @@ export const classNames = {
 const c = classNames
 
 export const styleText = `
-.${c.navLayer} { display: flex; width: 100%; }
-.${c.navRail} { justify-content: center; }
+/* Кнопка раздела — геометрия соседних разделов харнесса (poh-bft-plugin, Panel.styles.ts):
+   42px высоты, 12px радиус, иконка 16 + 8px до подписи; в рейке — круг 36px. */
+.${c.navLayer} { position: relative; flex: none; display: flex; align-items: center; width: 100%; height: 42px; margin: 8px 0 0; }
 .${c.navBadge} {
-  display: flex; align-items: center; gap: 8px; width: 100%;
-  padding: 6px 10px; border: 0; border-radius: 8px; cursor: pointer;
-  background: transparent; color: var(--dsw-alias-label-secondary);
+  display: inline-flex; align-items: center; gap: 8px;
+  width: calc(100% + 4px); height: 42px; margin: 0 -2px; padding: 0 10px 0 8px;
+  border: none; border-radius: 12px; background: transparent;
+  color: var(--dsw-alias-label-primary); font-family: inherit; font-size: 14px; cursor: pointer; overflow: hidden;
 }
 .${c.navBadge}:hover { background: var(--dsw-alias-interactive-bg-hover); }
-.${c.navBadge}[data-active] { background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-primary); }
-.${c.navBadgeLabel} { font-size: 13px; }
+.${c.navBadge}[data-active] { background: var(--dsw-alias-interactive-bg-hover); }
+.${c.navBadgeLabel} { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .${c.navCount} {
   margin-left: auto; font-size: 11px; padding: 0 6px; border-radius: 10px;
   background: var(--dsw-static-red-500); color: #fff; font-variant-numeric: tabular-nums;
 }
+.${c.navLayer}.${c.navRail} { width: 36px; height: 36px; margin: 0; }
+.${c.navRail} .${c.navBadge} { justify-content: center; gap: 0; width: 36px; height: 36px; padding: 0; border-radius: 50%; }
 
 /* ── Правый столбец с лентой ──────────────────────────────────────────── */
 
