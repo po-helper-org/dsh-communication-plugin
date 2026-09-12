@@ -1,7 +1,7 @@
 {
   "name": "dsh-communication-plugin",
   "version": "0.1.0",
-  "description": "Раздел «Управление коммуникацией» для DeepSeek Harness: Inbox сообщений из личного Telegram, разбор и тред диалога",
+  "description": "Раздел «Управление коммуникацией» для DeepSeek Harness: лента контура во фрейме, метки с правилами, карточка настроек",
   "license": "MIT",
   "type": "module",
   "main": "lib/index.js",
@@ -37,7 +37,9 @@
     "build": "tsc && tsdown",
     "test": "tsc -p tsconfig.test.json && node --test lib-test/test/*.test.js",
     "login": "node bin/login.mjs",
-    "test:live": "npm run build && node --test test/live/*.test.mjs"
+    "test:live": "npm run build && node --test test/live/*.test.mjs",
+    "test:e2e": "tsc --noEmit -p tsconfig.e2e.json && playwright test",
+    "playbook:shots": "PLAYBOOK_SHOTS_DIR=docs/guides/plugin-playbooks/screenshots npx playwright test"
   },
   "dependencies": {
     "@mtcute/node": "^0.28.0"
@@ -54,6 +56,7 @@
     "@deepseek-ai/dsh-client-ui-sidebar": "0.1.2-alpha.5",
     "@deepseek-ai/dsh-client-ui-slots": "0.1.2-alpha.5",
     "@deepseek-ai/schemastery": "^3.16.5",
+    "@playwright/test": "^1.59.1",
     "@types/node": "^22.10.2",
     "@types/react": "~18.3.31",
     "@types/react-dom": "~18.3.7",

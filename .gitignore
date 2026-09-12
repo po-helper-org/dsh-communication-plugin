@@ -5,3 +5,4 @@ lib-test/
 *.session*
 package-lock.json
 .env
+e2e/.artifacts/
