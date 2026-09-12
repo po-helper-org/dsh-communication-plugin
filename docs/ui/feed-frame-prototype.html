@@ -434,31 +434,59 @@ body {
 .hint { font-size: 12px; color: var(--dsw-alias-label-caption); padding: 8px 12px; border-top: 1px solid var(--dsw-alias-border-l1); }
 .hint a { color: inherit; }
 
-/* модал настроек — по мотивам Modal из ui-primitives */
+/* панель настроек — по мотивам ui-settings-general (оболочка) и ui-settings-plugins (карточки) */
 .mask { position: fixed; inset: 0; background: var(--dsw-alias-bg-mask-1); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 10; }
 .mask[hidden] { display: none; }
-.dialog { width: min(680px, calc(100vw - 32px)); max-height: calc(100vh - 64px); display: flex; flex-direction: column; background: var(--dsw-alias-bg-layer-3); border: 1px solid var(--dsw-alias-border-l2); border-radius: 14px; box-shadow: 0 12px 40px rgba(0,0,0,.25); }
-.dialog .dh { display: flex; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--dsw-alias-border-l1); }
-.dialog .dh b { font-size: 15px; }
-.dialog .dh small { color: var(--dsw-alias-label-caption); margin-left: 10px; }
-.dialog .dh .icon { margin-left: auto; }
-.dialog .db { overflow: auto; padding: 8px 18px 14px; }
-.dialog .df { display: flex; gap: 8px; justify-content: flex-end; padding: 12px 18px; border-top: 1px solid var(--dsw-alias-border-l1); }
+.settings { width: min(980px, calc(100vw - 48px)); height: min(800px, calc(100vh - 48px)); display: flex; background: var(--dsw-alias-bg-layer-2); border: 1px solid var(--dsw-alias-border-l2); border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,.25); overflow: hidden; }
+.snav { width: 200px; flex: none; padding: 16px 10px; border-right: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-1); }
+.snav h2 { font-size: 15px; font-weight: 600; margin: 0 0 10px 8px; }
+.snav .nav { padding: 7px 10px; }
+.scontent { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.shead { display: flex; align-items: center; height: 54px; padding: 0 20px; border-bottom: 1px solid var(--dsw-alias-border-l1); }
+.shead .icon { margin-left: auto; }
+.sbody { flex: 1; overflow: auto; padding: 20px 24px 28px; }
+.section { display: flex; flex-direction: column; gap: 12px; max-width: 760px; }
+.section h3 { margin: 0; font-size: 18px; font-weight: 600; }
+.section .intro { margin: 0; font-size: 13px; color: var(--dsw-alias-label-tertiary, var(--dsw-alias-label-caption)); }
+.tabs { display: flex; align-items: flex-end; gap: 22px; border-bottom: 1px solid var(--dsw-alias-border-l2); margin-top: 2px; }
+.tab { position: relative; border: 0; padding: 7px 1px 9px; background: transparent; color: var(--dsw-alias-label-tertiary, var(--dsw-alias-label-caption)); font: inherit; font-size: 13px; line-height: 20px; cursor: pointer; }
+.tab:hover, .tab[data-active] { color: var(--dsw-alias-label-primary); }
+.tab[data-active]::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--dsw-alias-label-primary); }
+.cards { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.card { border: 1px solid var(--dsw-alias-border-l2); border-radius: 12px; background: var(--dsw-alias-bg-layer-3); }
+.card:hover { border-color: var(--dsw-alias-label-dimmed); }
+.card[data-open] { background: var(--dsw-alias-bg-layer-2); border-color: var(--dsw-alias-label-dimmed); }
+.chead { width: 100%; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 12px; }
+.chead .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.chead .name { font-size: 15px; font-weight: 600; line-height: 1.4; }
+.chead .desc { font-size: 13px; line-height: 1.5; color: var(--dsw-alias-label-tertiary, var(--dsw-alias-label-caption)); }
+.chead .pending { font-size: 12px; color: var(--dsw-static-amber-500); }
+.chead .chev { color: var(--dsw-alias-label-tertiary, var(--dsw-alias-label-caption)); transition: transform .16s; }
+.card[data-open] .chev { transform: rotate(180deg); }
+.cbody { border-top: 1px solid var(--dsw-alias-border-l2); margin: 0 16px; padding-bottom: 8px; }
+.cbody[hidden] { display: none; }
+.cfoot { display: flex; align-items: center; gap: 8px; justify-content: flex-end; padding: 12px 0 6px; }
+.cfoot .export { margin-right: auto; }
 .btn { border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-2); color: inherit; font: inherit; border-radius: 8px; padding: 6px 12px; cursor: pointer; }
 .btn:hover { background: var(--dsw-alias-interactive-bg-hover); }
+.btn:disabled { opacity: .45; cursor: default; }
 .btn[data-primary] { background: var(--dsw-alias-brand-primary); color: var(--dsw-alias-label-primary-foreground); border-color: transparent; }
+
+/* редактор меток внутри карточки */
 .label { border: 1px solid var(--dsw-alias-border-l1); border-radius: 10px; padding: 10px 12px; margin-top: 10px; }
 .label .lh { display: flex; align-items: center; gap: 8px; }
 .label .lh input { flex: 1; }
 .label .tag { color: var(--dsw-alias-label-caption); font-family: var(--ds-font-family-code); font-size: 12px; white-space: nowrap; }
-.rule { display: flex; align-items: center; gap: 6px; margin-top: 6px; padding-left: 12px; }
-.rule .or { width: 34px; font-size: 11px; color: var(--dsw-alias-label-caption); text-align: right; }
-input, select { font: inherit; color: inherit; background: var(--dsw-alias-bg-layer-1); border: 1px solid var(--dsw-alias-border-l2); border-radius: 7px; padding: 5px 8px; }
-input:focus, select:focus { outline: 2px solid var(--dsw-alias-brand-primary-new-colorprimary-new-color); outline-offset: -1px; }
-.rule input { flex: 1; }
+.rule { display: flex; align-items: flex-start; gap: 6px; margin-top: 6px; padding-left: 12px; }
+.rule .or { width: 34px; flex: none; font-size: 11px; color: var(--dsw-alias-label-caption); text-align: right; padding-top: 8px; }
+.rule select { flex: none; }
+input, select, textarea { font: inherit; color: inherit; background: var(--dsw-alias-bg-layer-1); border: 1px solid var(--dsw-alias-border-l2); border-radius: 7px; padding: 5px 8px; }
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--dsw-alias-brand-primary-new-colorprimary-new-color); outline-offset: -1px; }
+.rule input, .rule textarea { flex: 1; min-width: 0; }
+.rule textarea { resize: vertical; min-height: 54px; line-height: 1.4; }
 .add { background: none; border: 0; color: var(--dsw-alias-label-caption); font: inherit; cursor: pointer; padding: 4px 0; }
 .add:hover { color: var(--dsw-alias-label-primary); }
-.rules-hint { font-size: 12px; color: var(--dsw-alias-label-caption); margin: 4px 0 0; }
+.rules-hint { font-size: 12px; color: var(--dsw-alias-label-caption); margin: 10px 0 0; line-height: 1.5; }
 .routes .icon { flex: none; margin-left: auto; }
 
 /* панель отладки прототипа — в dsh её нет */
@@ -486,7 +514,7 @@ input:focus, select:focus { outline: 2px solid var(--dsw-alias-brand-primary-new
       <button class="nav" type="button" id="btn-feed" data-active aria-pressed="true">
         <span aria-hidden>✉</span> Управление коммуникацией <span class="badge" id="badge" hidden>0</span>
       </button>
-      <button class="nav" type="button"><span aria-hidden>⚙</span> Настройки</button>
+      <button class="nav" type="button" id="btn-settings"><span aria-hidden>⚙</span> Настройки</button>
     </div>
   </aside>
 
@@ -516,15 +544,46 @@ input:focus, select:focus { outline: 2px solid var(--dsw-alias-brand-primary-new
 </div>
 
 <div class="mask" id="mask" hidden>
-  <div class="dialog" role="dialog" aria-modal="true" aria-label="Метки ленты">
-    <div class="dh"><b>Метки ленты</b><small>метка = хэштег на посте; ставится, если подходит хотя бы одно правило</small>
-      <button class="icon" type="button" id="dlg-close" aria-label="Закрыть">×</button></div>
-    <div class="db" id="labels-body"></div>
-    <div class="df">
-      <button class="btn" type="button" id="btn-add-label">＋ Метка</button>
-      <button class="btn" type="button" id="btn-copy">Скопировать JSON</button>
-      <button class="btn" type="button" id="btn-reset">Сбросить</button>
-      <button class="btn" type="button" data-primary id="btn-done">Готово</button>
+  <div class="settings" role="dialog" aria-modal="true" aria-label="Настройки">
+    <nav class="snav">
+      <h2>Настройки</h2>
+      <button class="nav" type="button">Общие</button>
+      <button class="nav" type="button" data-active>Плагины</button>
+    </nav>
+    <div class="scontent">
+      <div class="shead"><b>Плагины</b><button class="icon" type="button" id="dlg-close" aria-label="Закрыть">×</button></div>
+      <div class="sbody">
+        <div class="section">
+          <h3>Плагины</h3>
+          <p class="intro">Настройка и обзор плагинов этой установки.</p>
+          <div class="tabs">
+            <button class="tab" type="button">Установленные</button>
+            <button class="tab" type="button" data-active>Конфигурация плагинов</button>
+          </div>
+          <ul class="cards">
+            <li class="card"><button class="chead" type="button"><span class="txt"><span class="name">Shell</span><span class="desc">Ограничения на каждую команду, которую выполняет агент.</span></span><span class="chev">⌄</span></button></li>
+            <li class="card"><button class="chead" type="button"><span class="txt"><span class="name">Agent loop</span><span class="desc">Пределы цикла агента.</span></span><span class="chev">⌄</span></button></li>
+            <li class="card" id="our-card" data-open>
+              <button class="chead" type="button" id="our-head" aria-expanded="true">
+                <span class="txt"><span class="name">Управление коммуникацией</span>
+                  <span class="desc">dsh-communication-plugin · метки ленты: название и правила, по которым пост получает метку.</span></span>
+                <span class="pending" id="pending" hidden>Не сохранено</span>
+                <span class="chev">⌄</span>
+              </button>
+              <div class="cbody" id="our-body">
+                <div id="labels-body"></div>
+                <div class="cfoot">
+                  <button class="add export" type="button" id="btn-copy">Скопировать JSON</button>
+                  <button class="btn" type="button" id="btn-add-label">＋ Метка</button>
+                  <button class="btn" type="button" id="btn-discard" disabled>Отменить</button>
+                  <button class="btn" type="button" data-primary id="btn-save" disabled>Сохранить</button>
+                </div>
+              </div>
+            </li>
+            <li class="card"><button class="chead" type="button"><span class="txt"><span class="name">Web search</span><span class="desc">Поставщик и лимиты веб-поиска.</span></span><span class="chev">⌄</span></button></li>
+          </ul>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -555,14 +614,14 @@ document.getElementById('btn-close').addEventListener('click', () => setOpen(fal
 // Та же форма, что у файла communication/labels.json, который читают мост,
 // перенос из Telegram и перемаркировка. Здесь — в localStorage, потому что
 // статическая страница файл не пишет; кнопка «Скопировать JSON» — мост к файлу.
-const KINDS = { account: 'учётка', tag: 'тег на посте', contains: 'содержит', regex: 'регулярка' };
+const KINDS = { account: 'учётка', tag: 'тег на посте', contains: 'содержит', regex: 'регулярка', prompt: 'промт' };
 const DEFAULTS = { labels: [
   { id: 'разработка', title: 'Разработка', rules: [ { account: 'openhands' }, { account: 'pr_agent' }, { account: 'issue_agent' }, { tag: 'контур_задача' } ] },
   { id: 'продукт', title: 'Продукт', rules: [ { account: 'product_radar' }, { account: 'problemhunt' } ] },
   { id: 'маркетинг', title: 'Маркетинг', rules: [ { contains: 'маркетинг' }, { contains: 'продвижен' } ] },
   { id: 'релизы', title: 'Релизы', rules: [ { account: 'delivery' }, { tag: 'контур_приёмка' }, { contains: 'релиз' } ] },
   { id: 'gds', title: 'GDS', rules: [ { contains: 'GDS' } ] },
-  { id: 'live', title: 'Live', rules: [ { contains: 'MTS Live' }, { contains: 'МТС Live' }, { contains: 'mts.link' } ] },
+  { id: 'live', title: 'Live', rules: [ { contains: 'MTS Live' }, { contains: 'mts.link' }, { prompt: 'Переписка с партнёром MTS Live: созвоны, договорённости, сроки интеграции — даже если слово «Live» в тексте не встречается' } ] },
   { id: 'клиенты', title: 'Клиенты', rules: [ { account: 'tg_aleks' }, { account: 'crm_harness' }, { contains: 'клиент' } ] },
 ] };
 let config = load();
@@ -601,36 +660,59 @@ document.getElementById('routes').addEventListener('click', (e) => {
   renderPills();
 });
 
-// ---------- настройка ----------
+// ---------- настройки: Настройки → Плагины → карточка плагина ----------
+// В dsh это `settings.plugin.item`: карточка, ключ — пространство настроек
+// плагина. Раскрывается на месте, Сохранить/Отменить — в карточке, «Не
+// сохранено» — в её заголовке. Здесь то же самое, но состояние — в localStorage.
 const mask = document.getElementById('mask');
 const body = document.getElementById('labels-body');
-function openDialog() { renderDialog(); mask.hidden = false; }
-function closeDialog() { mask.hidden = true; save(); renderPills(); }
-document.getElementById('btn-labels').addEventListener('click', openDialog);
-document.getElementById('dlg-close').addEventListener('click', closeDialog);
-document.getElementById('btn-done').addEventListener('click', closeDialog);
-mask.addEventListener('click', (e) => { if (e.target === mask) closeDialog(); });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !mask.hidden) closeDialog(); });
-document.getElementById('btn-reset').addEventListener('click', () => { config = structuredClone(DEFAULTS); renderDialog(); });
+let draft = structuredClone(config);           // правки до «Сохранить»
+const dirty = () => JSON.stringify(draft) !== JSON.stringify(config);
+function refreshState() {
+  const d = dirty();
+  document.getElementById('pending').hidden = !d;
+  document.getElementById('btn-save').disabled = !d;
+  document.getElementById('btn-discard').disabled = !d;
+}
+function openSettings() { draft = structuredClone(config); renderCard(); mask.hidden = false; }
+function closeSettings() { mask.hidden = true; }
+document.getElementById('btn-labels').addEventListener('click', openSettings);
+document.getElementById('btn-settings').addEventListener('click', openSettings);
+document.getElementById('dlg-close').addEventListener('click', closeSettings);
+mask.addEventListener('click', (e) => { if (e.target === mask) closeSettings(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !mask.hidden) closeSettings(); });
+document.getElementById('our-head').addEventListener('click', () => {
+  const card = document.getElementById('our-card');
+  const open = card.toggleAttribute('data-open');
+  document.getElementById('our-body').hidden = !open;
+});
+document.getElementById('btn-save').addEventListener('click', () => {
+  config = structuredClone(draft); save(); renderPills(); refreshState();
+});
+document.getElementById('btn-discard').addEventListener('click', () => { draft = structuredClone(config); renderCard(); });
 document.getElementById('btn-copy').addEventListener('click', async (e) => {
-  try { await navigator.clipboard.writeText(JSON.stringify(config, null, 2)); e.target.textContent = 'Скопировано'; setTimeout(() => e.target.textContent = 'Скопировать JSON', 1200); } catch {}
+  try { await navigator.clipboard.writeText(JSON.stringify(draft, null, 2)); e.target.textContent = 'Скопировано'; setTimeout(() => e.target.textContent = 'Скопировать JSON', 1200); } catch {}
 });
 document.getElementById('btn-add-label').addEventListener('click', () => {
-  config.labels.push({ id: '', title: '', rules: [ { contains: '' } ] });
-  renderDialog();
+  draft.labels.push({ id: '', title: '', rules: [ { contains: '' } ] });
+  renderCard();
   body.querySelector('.label:last-child input')?.focus();
 });
 
-function renderDialog() {
+const PLACEHOLDER = {
+  account: 'product_radar', tag: 'контур_приёмка', contains: 'слово или фраза', regex: '\\bGDS\\b',
+  prompt: 'Переписка с партнёром MTS Live: созвоны, договорённости, сроки интеграции — даже если слова «Live» в тексте нет',
+};
+function renderCard() {
   body.innerHTML = '';
-  config.labels.forEach((l, li) => {
+  draft.labels.forEach((l, li) => {
     const box = document.createElement('div'); box.className = 'label';
     const head = document.createElement('div'); head.className = 'lh';
     const title = document.createElement('input'); title.value = l.title; title.placeholder = 'Название метки';
     const tag = document.createElement('span'); tag.className = 'tag'; tag.textContent = l.id ? '#' + l.id : '#…';
-    title.addEventListener('input', () => { l.title = title.value; l.id = slug(title.value); tag.textContent = l.id ? '#' + l.id : '#…'; });
+    title.addEventListener('input', () => { l.title = title.value; l.id = slug(title.value); tag.textContent = l.id ? '#' + l.id : '#…'; refreshState(); });
     const del = document.createElement('button'); del.className = 'icon'; del.type = 'button'; del.textContent = '×'; del.title = 'Удалить метку';
-    del.addEventListener('click', () => { config.labels.splice(li, 1); renderDialog(); });
+    del.addEventListener('click', () => { draft.labels.splice(li, 1); renderCard(); });
     head.append(title, tag, del); box.append(head);
 
     l.rules.forEach((r, ri) => {
@@ -639,24 +721,28 @@ function renderDialog() {
       const or = document.createElement('span'); or.className = 'or'; or.textContent = ri === 0 ? 'если' : 'или';
       const sel = document.createElement('select');
       for (const [k, t] of Object.entries(KINDS)) { const o = document.createElement('option'); o.value = k; o.textContent = t; o.selected = k === kind; sel.append(o); }
-      const val = document.createElement('input'); val.value = r[kind] ?? ''; val.placeholder = { account: 'product_radar', tag: 'контур_приёмка', contains: 'слово или фраза', regex: '\\bGDS\\b' }[kind];
-      const put = () => { for (const k of Object.keys(r)) delete r[k]; r[sel.value] = val.value; };
-      sel.addEventListener('change', () => { put(); renderDialog(); });
+      // Промт — многострочный: это описание для модели, а не значение для сравнения.
+      const val = document.createElement(kind === 'prompt' ? 'textarea' : 'input');
+      val.value = r[kind] ?? ''; val.placeholder = PLACEHOLDER[kind];
+      const put = () => { for (const k of Object.keys(r)) delete r[k]; r[sel.value] = val.value; refreshState(); };
+      sel.addEventListener('change', () => { put(); renderCard(); });
       val.addEventListener('input', put);
       const rm = document.createElement('button'); rm.className = 'icon'; rm.type = 'button'; rm.textContent = '×'; rm.title = 'Убрать правило';
-      rm.addEventListener('click', () => { l.rules.splice(ri, 1); renderDialog(); });
+      rm.addEventListener('click', () => { l.rules.splice(ri, 1); renderCard(); });
       row.append(or, sel, val, rm); box.append(row);
     });
     const add = document.createElement('button'); add.className = 'add'; add.type = 'button'; add.textContent = '＋ правило';
     add.style.marginLeft = '46px';
-    add.addEventListener('click', () => { l.rules.push({ contains: '' }); renderDialog(); });
+    add.addEventListener('click', () => { l.rules.push({ contains: '' }); renderCard(); });
     box.append(add);
     body.append(box);
   });
   const hint = document.createElement('p'); hint.className = 'rules-hint';
-  hint.textContent = 'Метка ставится при публикации и перемаркировкой (scripts/relabel.py). Посты с опросом или вложением перемаркировать нельзя — правка убивает опрос; им метки ставятся только при публикации.';
+  hint.textContent = 'Метка = хэштег на посте; ставится, если подходит хотя бы одно правило. «Промт» спрашивает модель и проверяется последним — только когда ни одно другое правило не подошло; ответ запоминается на пост. Посты с опросом или вложением перемаркировать нельзя (правка убивает опрос) — им метки ставятся только при публикации.';
   body.append(hint);
+  refreshState();
 }
+
 renderPills();
 
 // Значок «ждут тебя»: считается ВНЕ фрейма, прямым запросом к ленте по тегу развилки.
