@@ -1,0 +1,834 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Лента во фрейме</title>
+<!--
+  Прототип раздела «Управление коммуникацией» как правого столбца dsh со встроенной
+  лентой. Лента НЕ рисуется заново: в столбце стоит iframe с работающим Phanpy
+  (http://127.0.0.1:8083). Своего UI ленты здесь нет намеренно.
+
+  Оболочка dsh воспроизведена по его же токенам: ниже вставлен настоящий
+  packages/client/ui-theme/src/styles/design-platform.css, цвета обеих тем — те же.
+
+  Открывать ТОЛЬКО с 127.0.0.1 (не localhost и не file://): фрейм подхватывает вход
+  из хранилища Phanpy лишь когда сайт верхнего окна совпадает — 127.0.0.1 с любым
+  портом это один сайт, localhost — уже другой. Вход внутри фрейма невозможен:
+  GoToSocial отдаёт x-frame-options: DENY на странице входа.
+-->
+<style>
+/* Figma font-weight 510 (an SF Pro variable-font weight) always renders as
+   font-weight: 500 in this UI — non-variable webfonts snap intermediate
+   weights unpredictably across platforms. */
+body {
+  --dsw-static-amber-100: rgb(254, 245, 231);
+  --dsw-static-amber-400: rgb(247, 173, 49);
+  --dsw-static-amber-500: rgb(245, 158, 11);
+  --dsw-static-amber-600: rgb(221, 134, 41);
+  --dsw-static-amber-900: rgb(39, 36, 31);
+  --dsw-static-blue-100: rgb(219, 234, 254);
+  --dsw-static-blue-300: rgb(147, 197, 253);
+  --dsw-static-blue-400: rgb(96, 165, 250);
+  --dsw-static-blue-450: rgb(77, 147, 248);
+  --dsw-static-blue-500: rgb(59, 130, 246);
+  --dsw-static-blue-50: rgb(239, 246, 255);
+  --dsw-static-blue-50p: rgb(234, 243, 255);
+  --dsw-static-blue-600: rgb(37, 99, 235);
+  --dsw-static-blue-75: rgb(229, 240, 255);
+  --dsw-static-blue-800: rgb(30, 64, 175);
+  --dsw-static-blue-900: rgb(14, 48, 116);
+  --dsw-static-blue-950: rgb(23, 37, 84);
+  --dsw-static-deepseek-100: rgb(228, 237, 253);
+  --dsw-static-deepseek-200: rgb(211, 226, 255);
+  --dsw-static-deepseek-300: rgb(183, 200, 254);
+  --dsw-static-deepseek-400: rgb(103, 158, 254);
+  --dsw-static-deepseek-450: rgb(86, 134, 254);
+  --dsw-static-deepseek-500: rgb(65, 118, 230);
+  --dsw-static-deepseek-50: rgb(237, 243, 254);
+  --dsw-static-deepseek-600: rgb(72, 104, 178);
+  --dsw-static-deepseek-700-delete: rgb(47, 76, 143);
+  --dsw-static-deepseek-800: rgb(52, 65, 91);
+  --dsw-static-deepseek-900: rgb(40, 49, 66);
+  --dsw-static-green-100: rgb(230, 250, 237);
+  --dsw-static-green-400: rgb(78, 209, 126);
+  --dsw-static-green-500: rgb(34, 197, 94);
+  --dsw-static-green-900: rgb(35, 60, 44);
+  --dsw-static-neutral-00: rgb(255, 255, 255);
+  --dsw-static-neutral-1000: rgb(0, 0, 0);
+  --dsw-static-neutral-100: rgb(245, 245, 245);
+  --dsw-static-neutral-150: rgb(237, 237, 237);
+  --dsw-static-neutral-200: rgb(229, 229, 229);
+  --dsw-static-neutral-250: rgb(220, 220, 220);
+  --dsw-static-neutral-300: rgb(212, 212, 212);
+  --dsw-static-neutral-400: rgb(162, 164, 166);
+  --dsw-static-neutral-500: rgb(127, 130, 135);
+  --dsw-static-neutral-50: rgb(250, 250, 250);
+  --dsw-static-neutral-550: rgb(101, 103, 107);
+  --dsw-static-neutral-600: rgb(84, 85, 87);
+  --dsw-static-neutral-700: rgb(60, 60, 61);
+  --dsw-static-neutral-800: rgb(41, 41, 41);
+  --dsw-static-neutral-850: rgb(33, 33, 35);
+  --dsw-static-neutral-900: rgb(15, 15, 15);
+  --dsw-static-neutral-bluish-00: rgb(255, 255, 255);
+  --dsw-static-neutral-bluish-1000: rgb(15, 17, 21);
+  --dsw-static-neutral-bluish-100: rgb(235, 238, 242);
+  --dsw-static-neutral-bluish-150: rgb(233, 236, 242);
+  --dsw-static-neutral-bluish-200: rgb(225, 229, 238);
+  --dsw-static-neutral-bluish-300: rgb(207, 211, 214);
+  --dsw-static-neutral-bluish-400: rgb(173, 178, 184);
+  --dsw-static-neutral-bluish-500: rgb(151, 157, 166);
+  --dsw-static-neutral-bluish-50: rgb(249, 250, 251);
+  --dsw-static-neutral-bluish-600: rgb(129, 133, 140);
+  --dsw-static-neutral-bluish-60: rgb(245, 246, 247);
+  --dsw-static-neutral-bluish-700: rgb(97, 102, 107);
+  --dsw-static-neutral-bluish-750: rgb(67, 69, 74);
+  --dsw-static-neutral-bluish-75: rgb(241, 243, 245);
+  --dsw-static-neutral-bluish-800: rgb(53, 54, 56);
+  --dsw-static-neutral-bluish-850: rgb(44, 44, 46);
+  --dsw-static-neutral-bluish-875: rgb(35, 35, 36);
+  --dsw-static-neutral-bluish-900: rgb(27, 27, 28);
+  --dsw-static-neutral-bluish-950: rgb(21, 21, 23);
+  --dsw-static-red-100: rgb(254, 226, 226);
+  --dsw-static-red-400: rgb(242, 90, 90);
+  --dsw-static-red-500: rgb(239, 68, 68);
+  --dsw-static-red-50: rgb(254, 242, 242);
+  --dsw-static-red-600: rgb(236, 19, 19);
+  --dsw-static-red-900: rgb(87, 12, 12);
+}
+
+body[data-ds-dark-theme] {
+  --dsw-static-amber-100: rgb(254, 245, 231);
+  --dsw-static-amber-400: rgb(247, 173, 49);
+  --dsw-static-amber-500: rgb(245, 158, 11);
+  --dsw-static-amber-600: rgb(221, 134, 41);
+  --dsw-static-amber-900: rgb(39, 36, 31);
+  --dsw-static-blue-100: rgb(219, 234, 254);
+  --dsw-static-blue-300: rgb(147, 197, 253);
+  --dsw-static-blue-400: rgb(96, 165, 250);
+  --dsw-static-blue-450: rgb(77, 147, 248);
+  --dsw-static-blue-500: rgb(59, 130, 246);
+  --dsw-static-blue-50: rgb(239, 246, 255);
+  --dsw-static-blue-50p: rgb(234, 243, 255);
+  --dsw-static-blue-600: rgb(37, 99, 235);
+  --dsw-static-blue-75: rgb(229, 240, 255);
+  --dsw-static-blue-800: rgb(30, 64, 175);
+  --dsw-static-blue-900: rgb(14, 48, 116);
+  --dsw-static-blue-950: rgb(23, 37, 84);
+  --dsw-static-deepseek-100: rgb(228, 237, 253);
+  --dsw-static-deepseek-200: rgb(211, 226, 255);
+  --dsw-static-deepseek-300: rgb(183, 200, 254);
+  --dsw-static-deepseek-400: rgb(103, 158, 254);
+  --dsw-static-deepseek-450: rgb(86, 134, 254);
+  --dsw-static-deepseek-500: rgb(65, 118, 230);
+  --dsw-static-deepseek-50: rgb(237, 243, 254);
+  --dsw-static-deepseek-600: rgb(72, 104, 178);
+  --dsw-static-deepseek-700-delete: rgb(47, 76, 143);
+  --dsw-static-deepseek-800: rgb(52, 65, 91);
+  --dsw-static-deepseek-900: rgb(40, 49, 66);
+  --dsw-static-green-100: rgb(230, 250, 237);
+  --dsw-static-green-400: rgb(78, 209, 126);
+  --dsw-static-green-500: rgb(34, 197, 94);
+  --dsw-static-green-900: rgb(35, 60, 44);
+  --dsw-static-neutral-00: rgb(255, 255, 255);
+  --dsw-static-neutral-1000: rgb(0, 0, 0);
+  --dsw-static-neutral-100: rgb(245, 245, 245);
+  --dsw-static-neutral-150: rgb(237, 237, 237);
+  --dsw-static-neutral-200: rgb(229, 229, 229);
+  --dsw-static-neutral-250: rgb(220, 220, 220);
+  --dsw-static-neutral-300: rgb(212, 212, 212);
+  --dsw-static-neutral-400: rgb(162, 164, 166);
+  --dsw-static-neutral-500: rgb(127, 130, 135);
+  --dsw-static-neutral-50: rgb(250, 250, 250);
+  --dsw-static-neutral-550: rgb(101, 103, 107);
+  --dsw-static-neutral-600: rgb(84, 85, 87);
+  --dsw-static-neutral-700: rgb(60, 60, 61);
+  --dsw-static-neutral-800: rgb(41, 41, 41);
+  --dsw-static-neutral-850: rgb(33, 33, 35);
+  --dsw-static-neutral-900: rgb(15, 15, 15);
+  --dsw-static-neutral-bluish-00: rgb(255, 255, 255);
+  --dsw-static-neutral-bluish-1000: rgb(15, 17, 21);
+  --dsw-static-neutral-bluish-100: rgb(235, 238, 242);
+  --dsw-static-neutral-bluish-150: rgb(233, 236, 242);
+  --dsw-static-neutral-bluish-200: rgb(225, 229, 238);
+  --dsw-static-neutral-bluish-300: rgb(207, 211, 214);
+  --dsw-static-neutral-bluish-400: rgb(173, 178, 184);
+  --dsw-static-neutral-bluish-500: rgb(151, 157, 166);
+  --dsw-static-neutral-bluish-50: rgb(249, 250, 251);
+  --dsw-static-neutral-bluish-600: rgb(129, 133, 140);
+  --dsw-static-neutral-bluish-60: rgb(249, 250, 251);
+  --dsw-static-neutral-bluish-700: rgb(97, 102, 107);
+  --dsw-static-neutral-bluish-750: rgb(67, 69, 74);
+  --dsw-static-neutral-bluish-75: rgb(241, 243, 245);
+  --dsw-static-neutral-bluish-800: rgb(53, 54, 56);
+  --dsw-static-neutral-bluish-850: rgb(44, 44, 46);
+  --dsw-static-neutral-bluish-875: rgb(35, 35, 36);
+  --dsw-static-neutral-bluish-900: rgb(27, 27, 28);
+  --dsw-static-neutral-bluish-950: rgb(21, 21, 23);
+  --dsw-static-red-100: rgb(254, 226, 226);
+  --dsw-static-red-400: rgb(242, 90, 90);
+  --dsw-static-red-500: rgb(239, 68, 68);
+  --dsw-static-red-50: rgb(254, 242, 242);
+  --dsw-static-red-600: rgb(236, 19, 19);
+  --dsw-static-red-900: rgb(87, 12, 12);
+}
+
+body {
+  --dsw-alias-bg-base: var(--dsw-static-neutral-bluish-00);
+  --dsw-alias-bg-layer-1: var(--dsw-static-neutral-bluish-00);
+  --dsw-alias-bg-layer-2: var(--dsw-static-neutral-bluish-00);
+  --dsw-alias-bg-layer-3: var(--dsw-static-neutral-bluish-00);
+  --dsw-alias-bg-mask-1: rgba(0, 0, 0, 0.24);
+  --dsw-alias-bg-mask-2: rgba(0, 0, 0, 0.12);
+  --dsw-alias-bg-mask-3: rgba(0, 0, 0, 0.48);
+  --dsw-alias-bg-mask-photo: rgba(0, 0, 0, 0.88);
+  --dsw-alias-bg-mask-drop: rgba(255, 255, 255, 0.7);
+  --dsw-alias-bg-module-platform: var(--dsw-static-neutral-bluish-60);
+  --dsw-alias-bg-multi-select: var(--dsw-static-neutral-bluish-60);
+  --dsw-alias-bg-overlay: var(--dsw-static-neutral-bluish-150);
+  --dsw-alias-bg-skeleton: rgba(0, 0, 0, 0.04);
+  --dsw-alias-border-inverted2: rgba(0, 0, 0, 0);
+  --dsw-alias-border-inverted: rgba(0, 0, 0, 0);
+  --dsw-alias-border-l1: rgba(0, 0, 0, 0.04);
+  --dsw-alias-border-l2-darkmode-thin: rgba(0, 0, 0, 0.1);
+  --dsw-alias-border-l2: rgba(0, 0, 0, 0.1);
+  --dsw-alias-border-l3: rgba(0, 0, 0, 0.12);
+  --dsw-alias-border-l4: rgba(0, 0, 0, 0.16);
+  --dsw-alias-brand-primary-invert: var(--dsw-static-neutral-bluish-1000);
+  --dsw-alias-brand-primary-new-colorprimary-new-color: rgb(65, 118, 230);
+  --dsw-alias-brand-primary: var(--dsw-static-neutral-bluish-1000);
+  --dsw-alias-brand-text: var(--dsw-static-neutral-bluish-1000);
+  --dsw-alias-button-contrast-fill: var(--dsw-static-neutral-bluish-700);
+  --dsw-alias-button-elevated-fill: var(--dsw-static-neutral-bluish-00);
+  --dsw-alias-button-floating-fill: var(--dsw-static-neutral-bluish-00);
+  --dsw-alias-button-floating-hover: var(--dsw-static-neutral-bluish-75);
+  --dsw-alias-button-ghost-active-border: var(--dsw-static-neutral-bluish-500);
+  --dsw-alias-button-ghost-active-fill: var(--dsw-static-neutral-bluish-100);
+  --dsw-alias-button-ghost-active-hover: var(--dsw-static-neutral-bluish-150);
+  --dsw-alias-button-info-fill: var(--dsw-static-deepseek-500);
+  --dsw-alias-button-info-hover: var(--dsw-static-deepseek-400);
+  --dsw-alias-button-primary-dimmed: var(--dsw-static-neutral-bluish-100);
+  --dsw-alias-button-primary-fill: var(--dsw-alias-brand-primary);
+  --dsw-alias-button-primary-hover: var(--dsw-static-neutral-bluish-750);
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(31, 31, 31, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(84, 85, 87, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(84, 85, 87, 0.6);
+  --dsw-alias-interactive-bg-active: rgba(38, 49, 72, 0.1);
+  --dsw-alias-interactive-bg-hover-accent: rgba(38, 49, 72, 0.14);
+  --dsw-alias-interactive-bg-hover-danger: rgba(236, 19, 19, 0.05);
+  --dsw-alias-interactive-bg-hover-solid: var(--dsw-static-neutral-bluish-75);
+  --dsw-alias-interactive-bg-hover: rgba(38, 49, 72, 0.06);
+  --dsw-alias-label-caption: var(--dsw-static-neutral-bluish-400);
+  --dsw-alias-label-dimmed: var(--dsw-static-neutral-bluish-200);
+  --dsw-alias-label-primary-bluish: var(--dsw-static-blue-900);
+  --dsw-alias-label-primary-dimmed: var(--dsw-static-neutral-bluish-950);
+  --dsw-alias-label-primary-foreground: var(--dsw-static-neutral-bluish-00);
+  --dsw-alias-label-primary-inverted: var(--dsw-static-neutral-bluish-00);
+  --dsw-alias-label-primary: var(--dsw-static-neutral-bluish-1000);
+  --dsw-alias-label-secondary: var(--dsw-static-neutral-bluish-700);
+  --dsw-alias-label-tertiary: var(--dsw-static-neutral-bluish-600);
+  --dsw-alias-markdown-citation: var(--dsw-static-neutral-bluish-100);
+  --dsw-alias-markdown-code-block-banner: var(--dsw-static-neutral-bluish-50);
+  --dsw-alias-markdown-code-block: var(--dsw-static-neutral-bluish-50);
+  --dsw-alias-markdown-code-segment-selected: var(--dsw-static-neutral-bluish-00);
+  --dsw-alias-markdown-code-segment-unselected: var(--dsw-static-neutral-bluish-75);
+  --dsw-alias-markdown-inline-code: var(--dsw-static-neutral-bluish-100);
+  --dsw-alias-markdown-placeholder: var(--dsw-static-neutral-bluish-60);
+  --dsw-alias-markdown-tag: var(--dsw-static-neutral-bluish-75);
+  --dsw-alias-scrollbar-bg-l1: var(--dsw-static-neutral-200);
+  --dsw-alias-scrollbar-bg-l2: var(--dsw-static-neutral-200);
+  --dsw-alias-scrollbar-hover-l1: var(--dsw-static-neutral-300);
+  --dsw-alias-scrollbar-hover-l2: var(--dsw-static-neutral-300);
+  --dsw-alias-state-business-primary: var(--dsw-static-deepseek-500);
+  --dsw-alias-state-business-tertiary: var(--dsw-static-deepseek-100);
+  --dsw-alias-state-error-primary: var(--dsw-static-red-600);
+  --dsw-alias-state-error-secondary: var(--dsw-static-red-400);
+  --dsw-alias-state-success-primary: var(--dsw-static-green-500);
+  --dsw-alias-state-success-secondary: var(--dsw-static-green-400);
+  --dsw-alias-state-success-tertiary: var(--dsw-static-green-100);
+  --dsw-alias-state-warn-label: var(--dsw-static-amber-600);
+  --dsw-alias-state-warn-primary: var(--dsw-static-amber-500);
+  --dsw-alias-state-warn-secondary: var(--dsw-static-amber-400);
+  --dsw-alias-state-warn-tertiary: var(--dsw-static-amber-100);
+  --dsw-alias-toast-bg: var(--dsw-static-neutral-bluish-800);
+  --dsw-alias-tooltip-bg: var(--dsw-static-neutral-bluish-850);
+  --dsw-specific-bubble-highlight: var(--dsw-static-deepseek-200);
+  --dsw-specific-bubble: var(--dsw-static-deepseek-50);
+  --dsw-specific-input-major: var(--dsw-static-neutral-bluish-00);
+  --dsw-specific-login-input: var(--dsw-static-neutral-bluish-50);
+  --dsw-specific-menu: var(--dsw-alias-bg-layer-3);
+  --dsw-specific-selector: var(--dsw-static-neutral-bluish-60);
+  --dsw-specific-sidebar-fill: var(--dsw-static-neutral-bluish-50);
+  --dsw-specific-sidebar-nav-item-active-accent: var(--dsw-static-deepseek-100);
+  --dsw-specific-sidebar-nav-item-active: var(--dsw-static-neutral-bluish-100);
+  --dsw-specific-sidebar-nav-item-hover: var(--dsw-static-neutral-bluish-75);
+  --dsw-specific-tip: var(--dsw-static-neutral-bluish-60);
+}
+
+body[data-ds-dark-theme] {
+  --dsw-alias-bg-base: var(--dsw-static-neutral-bluish-950);
+  --dsw-alias-bg-layer-1: var(--dsw-static-neutral-bluish-875);
+  --dsw-alias-bg-layer-2: var(--dsw-static-neutral-bluish-850);
+  --dsw-alias-bg-layer-3: var(--dsw-static-neutral-bluish-800);
+  --dsw-alias-bg-mask-1: rgba(0, 0, 0, 0.5);
+  --dsw-alias-bg-mask-2: rgba(0, 0, 0, 0.2);
+  --dsw-alias-bg-mask-3: rgba(0, 0, 0, 0.48);
+  --dsw-alias-bg-mask-photo: rgba(0, 0, 0, 0.88);
+  --dsw-alias-bg-mask-drop: rgba(39, 39, 48, 0.7);
+  --dsw-alias-bg-module-platform: var(--dsw-static-neutral-bluish-800);
+  --dsw-alias-bg-multi-select: var(--dsw-static-neutral-850);
+  --dsw-alias-bg-overlay: var(--dsw-static-neutral-bluish-700);
+  --dsw-alias-bg-skeleton: rgba(255, 255, 255, 0.08);
+  --dsw-alias-border-inverted2: rgba(255, 255, 255, 0.08);
+  --dsw-alias-border-inverted: rgba(255, 255, 255, 0.06);
+  --dsw-alias-border-l1: rgba(255, 255, 255, 0.06);
+  --dsw-alias-border-l2-darkmode-thin: rgba(255, 255, 255, 0.06);
+  --dsw-alias-border-l2: rgba(255, 255, 255, 0.12);
+  --dsw-alias-border-l3: rgba(255, 255, 255, 0.16);
+  --dsw-alias-border-l4: rgba(255, 255, 255, 0.2);
+  --dsw-alias-brand-primary-invert: var(--dsw-static-neutral-bluish-50);
+  --dsw-alias-brand-primary-new-colorprimary-new-color: var(--dsw-static-deepseek-450);
+  --dsw-alias-brand-primary: var(--dsw-static-neutral-bluish-50);
+  --dsw-alias-brand-text: var(--dsw-static-neutral-bluish-50);
+  --dsw-alias-button-contrast-fill: var(--dsw-static-neutral-bluish-50);
+  --dsw-alias-button-elevated-fill: var(--dsw-static-neutral-bluish-750);
+  --dsw-alias-button-floating-fill: var(--dsw-static-neutral-bluish-850);
+  --dsw-alias-button-floating-hover: var(--dsw-static-neutral-bluish-800);
+  --dsw-alias-button-ghost-active-border: var(--dsw-static-neutral-bluish-600);
+  --dsw-alias-button-ghost-active-fill: var(--dsw-static-neutral-bluish-750);
+  --dsw-alias-button-ghost-active-hover: var(--dsw-static-neutral-bluish-700);
+  --dsw-alias-button-info-fill: var(--dsw-static-deepseek-400);
+  --dsw-alias-button-info-hover: var(--dsw-static-deepseek-500);
+  --dsw-alias-button-primary-dimmed: var(--dsw-static-neutral-bluish-750);
+  --dsw-alias-button-primary-fill: var(--dsw-alias-brand-primary);
+  --dsw-alias-button-primary-hover: var(--dsw-static-neutral-bluish-100);
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(31, 31, 31, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(84, 85, 87, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(84, 85, 87, 0.6);
+  --dsw-alias-interactive-bg-active: rgba(255, 255, 255, 0.14);
+  --dsw-alias-interactive-bg-hover-accent: rgba(255, 255, 255, 0.24);
+  --dsw-alias-interactive-bg-hover-danger: rgba(242, 90, 90, 0.15);
+  --dsw-alias-interactive-bg-hover-solid: var(--dsw-static-neutral-bluish-800);
+  --dsw-alias-interactive-bg-hover: rgba(255, 255, 255, 0.08);
+  --dsw-alias-label-caption: var(--dsw-static-neutral-bluish-600);
+  --dsw-alias-label-dimmed: var(--dsw-static-neutral-bluish-750);
+  --dsw-alias-label-primary-bluish: var(--dsw-static-neutral-bluish-50);
+  --dsw-alias-label-primary-dimmed: var(--dsw-static-neutral-bluish-100);
+  --dsw-alias-label-primary-foreground: var(--dsw-static-neutral-bluish-1000);
+  --dsw-alias-label-primary-inverted: var(--dsw-static-neutral-bluish-800);
+  --dsw-alias-label-primary: var(--dsw-static-neutral-bluish-50);
+  --dsw-alias-label-secondary: var(--dsw-static-neutral-bluish-300);
+  --dsw-alias-label-tertiary: var(--dsw-static-neutral-bluish-400);
+  --dsw-alias-markdown-citation: var(--dsw-static-neutral-bluish-800);
+  --dsw-alias-markdown-code-block-banner: var(--dsw-static-neutral-bluish-850);
+  --dsw-alias-markdown-code-block: var(--dsw-static-neutral-bluish-900);
+  --dsw-alias-markdown-code-segment-selected: var(--dsw-static-neutral-bluish-800);
+  --dsw-alias-markdown-code-segment-unselected: var(--dsw-static-neutral-bluish-900);
+  --dsw-alias-markdown-inline-code: var(--dsw-static-neutral-bluish-850);
+  --dsw-alias-markdown-placeholder: var(--dsw-static-neutral-bluish-850);
+  --dsw-alias-markdown-tag: var(--dsw-static-neutral-bluish-850);
+  --dsw-alias-scrollbar-bg-l1: var(--dsw-static-neutral-700);
+  --dsw-alias-scrollbar-bg-l2: var(--dsw-static-neutral-600);
+  --dsw-alias-scrollbar-hover-l1: var(--dsw-static-neutral-600);
+  --dsw-alias-scrollbar-hover-l2: var(--dsw-static-neutral-550);
+  --dsw-alias-state-business-primary: var(--dsw-static-deepseek-400);
+  --dsw-alias-state-business-tertiary: var(--dsw-static-deepseek-800);
+  --dsw-alias-state-error-primary: var(--dsw-static-red-400);
+  --dsw-alias-state-error-secondary: var(--dsw-static-red-400);
+  --dsw-alias-state-success-primary: var(--dsw-static-green-500);
+  --dsw-alias-state-success-secondary: var(--dsw-static-green-400);
+  --dsw-alias-state-success-tertiary: var(--dsw-static-green-900);
+  --dsw-alias-state-warn-label: var(--dsw-static-amber-600);
+  --dsw-alias-state-warn-primary: var(--dsw-static-amber-500);
+  --dsw-alias-state-warn-secondary: var(--dsw-static-amber-400);
+  --dsw-alias-state-warn-tertiary: var(--dsw-static-amber-900);
+  --dsw-alias-toast-bg: var(--dsw-static-neutral-bluish-750);
+  --dsw-alias-tooltip-bg: var(--dsw-static-neutral-bluish-750);
+  --dsw-specific-bubble-highlight: var(--dsw-static-neutral-bluish-750);
+  --dsw-specific-bubble: var(--dsw-static-neutral-bluish-850);
+  --dsw-specific-input-major: var(--dsw-static-neutral-bluish-850);
+  --dsw-specific-login-input: var(--dsw-static-neutral-bluish-900);
+  --dsw-specific-menu: var(--dsw-alias-bg-layer-3);
+  --dsw-specific-selector: var(--dsw-static-neutral-bluish-800);
+  --dsw-specific-sidebar-fill: var(--dsw-static-neutral-bluish-900);
+  --dsw-specific-sidebar-nav-item-active-accent: var(--dsw-static-neutral-bluish-800);
+  --dsw-specific-sidebar-nav-item-active: var(--dsw-static-neutral-bluish-750);
+  --dsw-specific-sidebar-nav-item-hover: var(--dsw-static-neutral-bluish-850);
+  --dsw-specific-tip: var(--dsw-static-neutral-bluish-800);
+}
+
+:root { --dsw-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+/* ---------- оболочка dsh (по мотивам ui-layout / ui-sidebar) ---------- */
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  font-family: var(--dsw-font-family);
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-bg-layer-1);
+  font-size: 14px;
+  overflow: hidden;
+}
+.frame { display: flex; height: 100vh; }
+
+/* левая колонка */
+.sidebar {
+  width: 200px; flex: none; display: flex; flex-direction: column;
+  background: var(--dsw-specific-sidebar-fill, var(--dsw-alias-bg-layer-2));
+  border-right: 1px solid var(--dsw-alias-border-l2);
+  padding: 12px 8px;
+}
+.brand { display: flex; align-items: center; gap: 8px; padding: 6px 8px 14px; font-weight: 600; }
+.brand svg { width: 22px; height: 22px; }
+.newchat {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px;
+  background: var(--dsw-alias-bg-layer-1); border: 1px solid var(--dsw-alias-border-l2);
+  cursor: pointer; font: inherit; color: inherit; width: 100%; text-align: left;
+}
+.sessions { flex: 1; overflow: auto; margin-top: 14px; }
+.sessions .h { font-size: 11px; color: var(--dsw-alias-label-caption); padding: 6px 10px; text-transform: uppercase; letter-spacing: .04em; }
+.sessions .s { padding: 7px 10px; border-radius: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--dsw-alias-label-secondary, var(--dsw-alias-label-primary)); }
+.sessions .s:hover { background: var(--dsw-alias-interactive-bg-hover); }
+.footer { display: flex; flex-direction: column; gap: 4px; padding-top: 8px; border-top: 1px solid var(--dsw-alias-border-l1); }
+.nav {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; border: 0;
+  background: transparent; color: inherit; font: inherit; cursor: pointer; width: 100%; text-align: left;
+}
+.nav:hover { background: var(--dsw-alias-interactive-bg-hover); }
+.nav[data-active] { background: var(--dsw-alias-interactive-bg-active); font-weight: 600; }
+.nav .badge {
+  margin-left: auto; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
+  background: var(--dsw-static-red-500); color: #fff; font-size: 11px; line-height: 18px; text-align: center;
+}
+
+/* центр */
+.conv { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.hero { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--dsw-alias-label-caption); }
+.hero h1 { font-size: 22px; font-weight: 600; color: var(--dsw-alias-label-primary); margin: 0; }
+.composer { margin: 0 auto 28px; width: min(720px, calc(100% - 48px)); }
+.composer .box {
+  border: 1px solid var(--dsw-alias-border-l3); border-radius: 16px; padding: 14px 16px; min-height: 96px;
+  background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-caption);
+}
+
+/* правый столбец с лентой */
+.aside {
+  width: 420px; flex: none; display: flex; flex-direction: column;
+  border-left: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-1);
+}
+.aside[hidden] { display: none; }
+.aside .head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--dsw-alias-border-l1); }
+.aside .head b { font-weight: 600; }
+.aside .head a { margin-left: auto; color: var(--dsw-alias-label-caption); text-decoration: none; font-size: 12px; }
+.aside .head a:hover { color: var(--dsw-alias-label-primary); }
+.icon { width: 28px; height: 28px; border: 0; border-radius: 6px; background: transparent; color: inherit; cursor: pointer; font-size: 16px; }
+.icon:hover { background: var(--dsw-alias-interactive-bg-hover); }
+/* Пилюли переносятся, а не прокручиваются: скрытая за краем метка — это фильтр, которого как бы нет. */
+.routes { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--dsw-alias-border-l1); }
+.pill {
+  border: 1px solid var(--dsw-alias-border-l2); background: transparent; color: inherit; font: inherit; font-size: 12px;
+  border-radius: 999px; padding: 3px 10px; cursor: pointer; white-space: nowrap;
+}
+/* Текст на brand-primary — label-primary-foreground: «invert» в тёмной теме совпадает с самим primary (проверено вычисленными стилями). */
+.pill[data-active] { background: var(--dsw-alias-brand-primary); color: var(--dsw-alias-label-primary-foreground); border-color: transparent; }
+.aside iframe { flex: 1; width: 100%; border: 0; background: var(--dsw-alias-bg-layer-1); }
+.hint { font-size: 12px; color: var(--dsw-alias-label-caption); padding: 8px 12px; border-top: 1px solid var(--dsw-alias-border-l1); }
+.hint a { color: inherit; }
+
+/* панель настроек — по мотивам ui-settings-general (оболочка) и ui-settings-plugins (карточки) */
+.mask { position: fixed; inset: 0; background: var(--dsw-alias-bg-mask-1); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 10; }
+.mask[hidden] { display: none; }
+.settings { width: min(980px, calc(100vw - 48px)); height: min(800px, calc(100vh - 48px)); display: flex; background: var(--dsw-alias-bg-layer-2); border: 1px solid var(--dsw-alias-border-l2); border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,.25); overflow: hidden; }
+.snav { width: 200px; flex: none; padding: 16px 10px; border-right: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-1); }
+.snav h2 { font-size: 15px; font-weight: 600; margin: 0 0 10px 8px; }
+.snav .nav { padding: 7px 10px; }
+.scontent { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.shead { display: flex; align-items: center; height: 54px; padding: 0 20px; border-bottom: 1px solid var(--dsw-alias-border-l1); }
+.shead .icon { margin-left: auto; }
+.sbody { flex: 1; overflow: auto; padding: 20px 24px 28px; }
+.section { display: flex; flex-direction: column; gap: 12px; max-width: 760px; }
+.section h3 { margin: 0; font-size: 18px; font-weight: 600; }
+.section .intro { margin: 0; font-size: 13px; color: var(--dsw-alias-label-tertiary, var(--dsw-alias-label-caption)); }
+.tabs { display: flex; align-items: flex-end; gap: 22px; border-bottom: 1px solid var(--dsw-alias-border-l2); margin-top: 2px; }
+.tab { position: relative; border: 0; padding: 7px 1px 9px; background: transparent; color: var(--dsw-alias-label-tertiary, var(--dsw-alias-label-caption)); font: inherit; font-size: 13px; line-height: 20px; cursor: pointer; }
+.tab:hover, .tab[data-active] { color: var(--dsw-alias-label-primary); }
+.tab[data-active]::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--dsw-alias-label-primary); }
+.cards { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.card { border: 1px solid var(--dsw-alias-border-l2); border-radius: 12px; background: var(--dsw-alias-bg-layer-3); }
+.card:hover { border-color: var(--dsw-alias-label-dimmed); }
+.card[data-open] { background: var(--dsw-alias-bg-layer-2); border-color: var(--dsw-alias-label-dimmed); }
+.chead { width: 100%; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 12px; }
+.chead .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.chead .name { font-size: 15px; font-weight: 600; line-height: 1.4; }
+.chead .desc { font-size: 13px; line-height: 1.5; color: var(--dsw-alias-label-tertiary, var(--dsw-alias-label-caption)); }
+.chead .pending { font-size: 12px; color: var(--dsw-static-amber-500); }
+.chead .chev { color: var(--dsw-alias-label-tertiary, var(--dsw-alias-label-caption)); transition: transform .16s; }
+.card[data-open] .chev { transform: rotate(180deg); }
+.cbody { border-top: 1px solid var(--dsw-alias-border-l2); margin: 0 16px; padding-bottom: 8px; }
+.cbody[hidden] { display: none; }
+.cfoot { display: flex; align-items: center; gap: 8px; justify-content: flex-end; padding: 12px 0 6px; }
+.cfoot .export { margin-right: auto; }
+.btn { border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-2); color: inherit; font: inherit; border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+.btn:hover { background: var(--dsw-alias-interactive-bg-hover); }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn[data-primary] { background: var(--dsw-alias-brand-primary); color: var(--dsw-alias-label-primary-foreground); border-color: transparent; }
+
+/* поля подключения — по мотивам fields.tsx (ValueField / SecretField) */
+.fields { display: flex; flex-direction: column; gap: 10px; padding: 12px 0 4px; border-bottom: 1px solid var(--dsw-alias-border-l1); }
+.field { display: grid; grid-template-columns: 220px 1fr; gap: 12px; align-items: start; }
+.field label { font-size: 13px; padding-top: 6px; }
+.field .hint { display: block; font-size: 12px; color: var(--dsw-alias-label-caption); margin-top: 2px; }
+.field input { width: 100%; }
+.field .row { display: flex; gap: 6px; }
+.field .row input { flex: 1; }
+.status { font-size: 12px; margin-top: 4px; }
+.status[data-ok] { color: var(--dsw-static-green-500); }
+.status[data-bad] { color: var(--dsw-static-red-500); }
+.subhead { font-size: 13px; font-weight: 600; margin: 14px 0 0; }
+
+/* редактор меток внутри карточки */
+.label { border: 1px solid var(--dsw-alias-border-l1); border-radius: 10px; padding: 10px 12px; margin-top: 10px; }
+.label .lh { display: flex; align-items: center; gap: 8px; }
+.label .lh input { flex: 1; }
+.label .tag { color: var(--dsw-alias-label-caption); font-family: var(--ds-font-family-code); font-size: 12px; white-space: nowrap; }
+.rule { display: flex; align-items: flex-start; gap: 6px; margin-top: 6px; padding-left: 12px; }
+.rule .or { width: 34px; flex: none; font-size: 11px; color: var(--dsw-alias-label-caption); text-align: right; padding-top: 8px; }
+.rule select { flex: none; }
+input, select, textarea { font: inherit; color: inherit; background: var(--dsw-alias-bg-layer-1); border: 1px solid var(--dsw-alias-border-l2); border-radius: 7px; padding: 5px 8px; }
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--dsw-alias-brand-primary-new-colorprimary-new-color); outline-offset: -1px; }
+.rule input, .rule textarea { flex: 1; min-width: 0; }
+.rule textarea { resize: vertical; min-height: 54px; line-height: 1.4; }
+.add { background: none; border: 0; color: var(--dsw-alias-label-caption); font: inherit; cursor: pointer; padding: 4px 0; }
+.add:hover { color: var(--dsw-alias-label-primary); }
+.rules-hint { font-size: 12px; color: var(--dsw-alias-label-caption); margin: 10px 0 0; line-height: 1.5; }
+.routes .icon { flex: none; margin-left: auto; }
+
+/* панель отладки прототипа — в dsh её нет */
+.debug { position: fixed; left: 212px; bottom: 10px; display: flex; gap: 6px; opacity: .7; }
+.debug:hover { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="frame">
+  <aside class="sidebar">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12c4-6 12-6 18 0-6 6-14 6-18 0z"/><circle cx="9" cy="12" r="1.6" fill="currentColor"/></svg>
+      DeepSeek Harness
+    </div>
+    <button class="newchat" type="button">＋ Новая беседа</button>
+    <div class="sessions">
+      <div class="h">Сегодня</div>
+      <div class="s">Лента как плагин dsh</div>
+      <div class="s">Починка вебхука #326</div>
+      <div class="h">Вчера</div>
+      <div class="s">Три оси ленты</div>
+      <div class="s">Перенос Telegram в ленту</div>
+    </div>
+    <div class="footer">
+      <button class="nav" type="button" id="btn-feed" data-active aria-pressed="true">
+        <span aria-hidden>✉</span> Управление коммуникацией <span class="badge" id="badge" hidden>0</span>
+      </button>
+      <button class="nav" type="button" id="btn-settings"><span aria-hidden>⚙</span> Настройки</button>
+    </div>
+  </aside>
+
+  <main class="conv">
+    <div class="hero">
+      <h1>Чем помочь?</h1>
+      <div>беседа с агентом — как в dsh, здесь только место</div>
+    </div>
+    <div class="composer"><div class="box">Напишите сообщение…</div></div>
+  </main>
+
+  <section class="aside" id="aside" aria-label="Лента контура">
+    <div class="head">
+      <b>Лента контура</b>
+      <a href="http://127.0.0.1:8083/#/" target="_blank" rel="noopener" title="Открыть Phanpy во вкладке">открыть отдельно ↗</a>
+      <button class="icon" type="button" id="btn-close" aria-label="Закрыть">×</button>
+    </div>
+    <div class="routes" id="routes">
+      <!-- пилюли строятся из настроек меток, см. renderPills() -->
+      <button class="icon" type="button" id="btn-labels" title="Метки ленты" aria-label="Метки ленты">⚙</button>
+    </div>
+    <iframe id="feed" src="http://127.0.0.1:8083/#/" title="Лента контура (Phanpy)"
+      referrerpolicy="no-referrer"></iframe>
+    <div class="hint">Пусто или просит войти? Вход делается один раз во вкладке
+      <a href="http://127.0.0.1:8083/" target="_blank" rel="noopener">127.0.0.1:8083</a> — фрейм подхватит сам.</div>
+  </section>
+</div>
+
+<div class="mask" id="mask" hidden>
+  <div class="settings" role="dialog" aria-modal="true" aria-label="Настройки">
+    <nav class="snav">
+      <h2>Настройки</h2>
+      <button class="nav" type="button">Общие</button>
+      <button class="nav" type="button" data-active>Плагины</button>
+    </nav>
+    <div class="scontent">
+      <div class="shead"><b>Плагины</b><button class="icon" type="button" id="dlg-close" aria-label="Закрыть">×</button></div>
+      <div class="sbody">
+        <div class="section">
+          <h3>Плагины</h3>
+          <p class="intro">Настройка и обзор плагинов этой установки.</p>
+          <div class="tabs">
+            <button class="tab" type="button">Установленные</button>
+            <button class="tab" type="button" data-active>Конфигурация плагинов</button>
+          </div>
+          <ul class="cards">
+            <li class="card"><button class="chead" type="button"><span class="txt"><span class="name">Shell</span><span class="desc">Ограничения на каждую команду, которую выполняет агент.</span></span><span class="chev">⌄</span></button></li>
+            <li class="card"><button class="chead" type="button"><span class="txt"><span class="name">Agent loop</span><span class="desc">Пределы цикла агента.</span></span><span class="chev">⌄</span></button></li>
+            <li class="card" id="our-card" data-open>
+              <button class="chead" type="button" id="our-head" aria-expanded="true">
+                <span class="txt"><span class="name">Управление коммуникацией</span>
+                  <span class="desc">dsh-communication-plugin · метки ленты: название и правила, по которым пост получает метку.</span></span>
+                <span class="pending" id="pending" hidden>Не сохранено</span>
+                <span class="chev">⌄</span>
+              </button>
+              <div class="cbody" id="our-body">
+                <div class="fields">
+                  <div class="field"><label for="f-client">Адрес ленты (фрейм)<span class="hint">Клиент Phanpy. Только с 127.0.0.1 — иначе фрейм не увидит вход</span></label>
+                    <div><input id="f-client" placeholder="http://127.0.0.1:8083"></div></div>
+                  <div class="field"><label for="f-instance">Инстанс<span class="hint">Сервер ленты, к которому подключён клиент</span></label>
+                    <div><input id="f-instance" placeholder="https://feed.localtest.me"></div></div>
+                  <div class="field"><label for="f-token">Токен человека<span class="hint">Выдаёт <code>scripts/get_tokens.sh aleks</code>. Фрейм входит им сам — без страницы входа</span></label>
+                    <div><div class="row"><input id="f-token" type="password" placeholder="••••••••" autocomplete="off"><button class="btn" type="button" id="f-check">Проверить</button></div>
+                    <div class="status" id="f-status"></div></div></div>
+                </div>
+                <p class="subhead">Метки</p>
+                <div id="labels-body"></div>
+                <div class="cfoot">
+                  <button class="add export" type="button" id="btn-copy">Скопировать JSON</button>
+                  <button class="btn" type="button" id="btn-add-label">＋ Метка</button>
+                  <button class="btn" type="button" id="btn-discard" disabled>Отменить</button>
+                  <button class="btn" type="button" data-primary id="btn-save" disabled>Сохранить</button>
+                </div>
+              </div>
+            </li>
+            <li class="card"><button class="chead" type="button"><span class="txt"><span class="name">Web search</span><span class="desc">Поставщик и лимиты веб-поиска.</span></span><span class="chev">⌄</span></button></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="debug">
+  <button class="pill" type="button" id="theme">тема: светлая</button>
+  <button class="pill" type="button" id="width">ширина: 420</button>
+</div>
+
+<script>
+// Только состояние оболочки. Внутрь фрейма прототип не смотрит: он другого origin,
+// и это не ограничение прототипа, а свойство решения — dsh про содержимое ленты
+// не узнает ничего, кроме того, что спросит у API сам.
+const aside = document.getElementById('aside');
+const btn = document.getElementById('btn-feed');
+const frame = document.getElementById('feed');
+let base = 'http://127.0.0.1:8083/'; // переопределяется из настроек ниже, после загрузки config
+
+function setOpen(open) {
+  aside.hidden = !open;
+  btn.toggleAttribute('data-active', open);
+  btn.setAttribute('aria-pressed', String(open));
+}
+btn.addEventListener('click', () => setOpen(aside.hidden));
+document.getElementById('btn-close').addEventListener('click', () => setOpen(false));
+
+// ---------- метки ----------
+// Та же форма, что у файла communication/labels.json, который читают мост,
+// перенос из Telegram и перемаркировка. Здесь — в localStorage, потому что
+// статическая страница файл не пишет; кнопка «Скопировать JSON» — мост к файлу.
+const KINDS = { account: 'учётка', tag: 'тег на посте', contains: 'содержит', regex: 'регулярка', prompt: 'промт' };
+const DEFAULTS = { labels: [
+  { id: 'разработка', title: 'Разработка', rules: [ { account: 'openhands' }, { account: 'pr_agent' }, { account: 'issue_agent' }, { tag: 'контур_задача' } ] },
+  { id: 'продукт', title: 'Продукт', rules: [ { account: 'product_radar' }, { account: 'problemhunt' } ] },
+  { id: 'маркетинг', title: 'Маркетинг', rules: [ { contains: 'маркетинг' }, { contains: 'продвижен' } ] },
+  { id: 'релизы', title: 'Релизы', rules: [ { account: 'delivery' }, { tag: 'контур_приёмка' }, { contains: 'релиз' } ] },
+  { id: 'gds', title: 'GDS', rules: [ { contains: 'GDS' } ] },
+  { id: 'live', title: 'Live', rules: [ { contains: 'MTS Live' }, { contains: 'mts.link' }, { prompt: 'Переписка с партнёром MTS Live: созвоны, договорённости, сроки интеграции — даже если слово «Live» в тексте не встречается' } ] },
+  { id: 'клиенты', title: 'Клиенты', rules: [ { account: 'tg_aleks' }, { account: 'crm_harness' }, { contains: 'клиент' } ] },
+] };
+// Подключение хранится рядом с метками: одна карточка — одна форма — одно
+// «Сохранить». Токен в прототипе лежит в localStorage; в плагине — у узловой
+// половины, в браузер он не уходит.
+const CONN_DEFAULTS = { clientUrl: 'http://127.0.0.1:8083', instanceUrl: 'https://feed.localtest.me', token: '' };
+let config = load();
+let active = null; // id активной метки; null = Home
+base = (config.conn?.clientUrl || 'http://127.0.0.1:8083').replace(/\/$/, '') + '/';
+if (frame.src !== base + '#/') frame.src = base + '#/';
+
+function load() {
+  try { const raw = localStorage.getItem('feed-labels'); if (raw) return { ...structuredClone(DEFAULTS), conn: CONN_DEFAULTS, ...JSON.parse(raw) }; } catch {}
+  return { ...structuredClone(DEFAULTS), conn: { ...CONN_DEFAULTS } };
+}
+function save() { try { localStorage.setItem('feed-labels', JSON.stringify(config)); } catch {} }
+
+// Идентификатор из названия: строчные, пробелы в подчёркивание, только
+// буквы/цифры/подчёркивание — ровно то, что сервер считает хэштегом.
+const slug = (title) => title.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^\p{L}\p{N}_]/gu, '');
+
+function renderPills() {
+  const routes = document.getElementById('routes');
+  for (const p of routes.querySelectorAll('[data-label]')) p.remove();
+  const gear = document.getElementById('btn-labels');
+  const mk = (id, text) => {
+    const b = document.createElement('button');
+    b.className = 'pill'; b.type = 'button'; b.dataset.label = id ?? ''; b.textContent = text;
+    b.toggleAttribute('data-active', (id ?? null) === active);
+    routes.insertBefore(b, gear);
+  };
+  mk(null, 'Все');
+  for (const l of config.labels) mk(l.id, l.title);
+}
+document.getElementById('routes').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-label]');
+  if (!b) return;
+  // Одна метка — одна лента: объединение тегов сервер игнорирует (проверено),
+  // поэтому переключатель, а не мультивыбор.
+  active = b.dataset.label || null;
+  frame.src = base + (active ? '#/feed.localtest.me/t/' + encodeURIComponent(active) : '#/');
+  renderPills();
+});
+
+// ---------- настройки: Настройки → Плагины → карточка плагина ----------
+// В dsh это `settings.plugin.item`: карточка, ключ — пространство настроек
+// плагина. Раскрывается на месте, Сохранить/Отменить — в карточке, «Не
+// сохранено» — в её заголовке. Здесь то же самое, но состояние — в localStorage.
+const mask = document.getElementById('mask');
+const body = document.getElementById('labels-body');
+let draft = structuredClone(config);           // правки до «Сохранить»
+const dirty = () => JSON.stringify(draft) !== JSON.stringify(config);
+function refreshState() {
+  const d = dirty();
+  document.getElementById('pending').hidden = !d;
+  document.getElementById('btn-save').disabled = !d;
+  document.getElementById('btn-discard').disabled = !d;
+}
+function openSettings() { draft = structuredClone(config); renderCard(); mask.hidden = false; }
+function closeSettings() { mask.hidden = true; }
+document.getElementById('btn-labels').addEventListener('click', openSettings);
+document.getElementById('btn-settings').addEventListener('click', openSettings);
+document.getElementById('dlg-close').addEventListener('click', closeSettings);
+mask.addEventListener('click', (e) => { if (e.target === mask) closeSettings(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !mask.hidden) closeSettings(); });
+document.getElementById('our-head').addEventListener('click', () => {
+  const card = document.getElementById('our-card');
+  const open = card.toggleAttribute('data-open');
+  document.getElementById('our-body').hidden = !open;
+});
+document.getElementById('btn-save').addEventListener('click', () => {
+  config = structuredClone(draft); save(); renderPills(); refreshState();
+  const nextBase = (config.conn.clientUrl || CONN_DEFAULTS.clientUrl).replace(/\/$/, '') + '/';
+  if (nextBase !== base) { base = nextBase; frame.src = base + '#/'; }
+});
+for (const [id, key] of [['f-client', 'clientUrl'], ['f-instance', 'instanceUrl'], ['f-token', 'token']]) {
+  document.getElementById(id).addEventListener('input', (e) => { draft.conn[key] = e.target.value; refreshState(); });
+}
+// «Проверить» ходит в инстанс сам — в прототипе из браузера (нужен доверенный
+// сертификат), в плагине это делает узловая половина и отдаёт только итог.
+document.getElementById('f-check').addEventListener('click', async () => {
+  const st = document.getElementById('f-status');
+  st.removeAttribute('data-ok'); st.removeAttribute('data-bad'); st.textContent = 'проверяю…';
+  try {
+    const r = await fetch(draft.conn.instanceUrl.replace(/\/$/, '') + '/api/v1/accounts/verify_credentials', { headers: { Authorization: 'Bearer ' + draft.conn.token } });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const a = await r.json();
+    st.setAttribute('data-ok', ''); st.textContent = '@' + a.acct + ' — токен принят, фрейм войдёт этой учёткой';
+  } catch (e) {
+    st.setAttribute('data-bad', ''); st.textContent = 'не принят: ' + e.message;
+  }
+});
+document.getElementById('btn-discard').addEventListener('click', () => { draft = structuredClone(config); renderCard(); });
+document.getElementById('btn-copy').addEventListener('click', async (e) => {
+  try { await navigator.clipboard.writeText(JSON.stringify(draft, null, 2)); e.target.textContent = 'Скопировано'; setTimeout(() => e.target.textContent = 'Скопировать JSON', 1200); } catch {}
+});
+document.getElementById('btn-add-label').addEventListener('click', () => {
+  draft.labels.push({ id: '', title: '', rules: [ { contains: '' } ] });
+  renderCard();
+  body.querySelector('.label:last-child input')?.focus();
+});
+
+const PLACEHOLDER = {
+  account: 'product_radar', tag: 'контур_приёмка', contains: 'слово или фраза', regex: '\\bGDS\\b',
+  prompt: 'Переписка с партнёром MTS Live: созвоны, договорённости, сроки интеграции — даже если слова «Live» в тексте нет',
+};
+function renderCard() {
+  document.getElementById('f-client').value = draft.conn.clientUrl;
+  document.getElementById('f-instance').value = draft.conn.instanceUrl;
+  document.getElementById('f-token').value = draft.conn.token;
+  document.getElementById('f-status').textContent = '';
+  body.innerHTML = '';
+  draft.labels.forEach((l, li) => {
+    const box = document.createElement('div'); box.className = 'label';
+    const head = document.createElement('div'); head.className = 'lh';
+    const title = document.createElement('input'); title.value = l.title; title.placeholder = 'Название метки';
+    const tag = document.createElement('span'); tag.className = 'tag'; tag.textContent = l.id ? '#' + l.id : '#…';
+    title.addEventListener('input', () => { l.title = title.value; l.id = slug(title.value); tag.textContent = l.id ? '#' + l.id : '#…'; refreshState(); });
+    const del = document.createElement('button'); del.className = 'icon'; del.type = 'button'; del.textContent = '×'; del.title = 'Удалить метку';
+    del.addEventListener('click', () => { draft.labels.splice(li, 1); renderCard(); });
+    head.append(title, tag, del); box.append(head);
+
+    l.rules.forEach((r, ri) => {
+      const kind = Object.keys(KINDS).find((k) => k in r) ?? 'contains';
+      const row = document.createElement('div'); row.className = 'rule';
+      const or = document.createElement('span'); or.className = 'or'; or.textContent = ri === 0 ? 'если' : 'или';
+      const sel = document.createElement('select');
+      for (const [k, t] of Object.entries(KINDS)) { const o = document.createElement('option'); o.value = k; o.textContent = t; o.selected = k === kind; sel.append(o); }
+      // Промт — многострочный: это описание для модели, а не значение для сравнения.
+      const val = document.createElement(kind === 'prompt' ? 'textarea' : 'input');
+      val.value = r[kind] ?? ''; val.placeholder = PLACEHOLDER[kind];
+      const put = () => { for (const k of Object.keys(r)) delete r[k]; r[sel.value] = val.value; refreshState(); };
+      sel.addEventListener('change', () => { put(); renderCard(); });
+      val.addEventListener('input', put);
+      const rm = document.createElement('button'); rm.className = 'icon'; rm.type = 'button'; rm.textContent = '×'; rm.title = 'Убрать правило';
+      rm.addEventListener('click', () => { l.rules.splice(ri, 1); renderCard(); });
+      row.append(or, sel, val, rm); box.append(row);
+    });
+    const add = document.createElement('button'); add.className = 'add'; add.type = 'button'; add.textContent = '＋ правило';
+    add.style.marginLeft = '46px';
+    add.addEventListener('click', () => { l.rules.push({ contains: '' }); renderCard(); });
+    box.append(add);
+    body.append(box);
+  });
+  const hint = document.createElement('p'); hint.className = 'rules-hint';
+  hint.textContent = 'Метка = хэштег на посте; ставится, если подходит хотя бы одно правило. «Промт» спрашивает модель и проверяется последним — только когда ни одно другое правило не подошло; ответ запоминается на пост. Посты с опросом или вложением перемаркировать нельзя (правка убивает опрос) — им метки ставятся только при публикации.';
+  body.append(hint);
+  refreshState();
+}
+
+renderPills();
+
+// Значок «ждут тебя»: считается ВНЕ фрейма, прямым запросом к ленте по тегу развилки.
+// Так это и будет в плагине — только с узловой половины и с токеном человека; здесь
+// анонимно, поэтому на закрытой публичной ленте может быть отказ — тогда значок молчит.
+async function badge() {
+  try {
+    const r = await fetch('https://feed.localtest.me/api/v1/timelines/tag/' + encodeURIComponent('контур_развилка') + '?limit=20');
+    if (!r.ok) return;
+    const posts = await r.json();
+    const open = posts.filter((p) => p.poll && !p.poll.expired).length;
+    const el = document.getElementById('badge');
+    el.textContent = String(open);
+    el.hidden = open === 0;
+  } catch {}
+}
+badge();
+
+// отладка прототипа
+const themeBtn = document.getElementById('theme');
+themeBtn.addEventListener('click', () => {
+  const dark = !document.body.hasAttribute('data-ds-dark-theme');
+  document.body.toggleAttribute('data-ds-dark-theme', dark);
+  themeBtn.textContent = 'тема: ' + (dark ? 'тёмная' : 'светлая');
+});
+const widths = [360, 420, 520];
+const widthBtn = document.getElementById('width');
+widthBtn.addEventListener('click', () => {
+  const cur = parseInt(getComputedStyle(aside).width, 10);
+  const next = widths[(widths.indexOf(cur) + 1) % widths.length] ?? 420;
+  aside.style.width = next + 'px';
+  widthBtn.textContent = 'ширина: ' + next;
+});
+if (matchMedia('(prefers-color-scheme: dark)').matches) themeBtn.click();
+</script>
+</body>
+</html>
