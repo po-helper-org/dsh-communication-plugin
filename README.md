@@ -110,6 +110,7 @@
 | [docs/chatwoot-as-backend.md](docs/chatwoot-as-backend.md) | Когда и через какой шов переходить на Chatwoot как бэкенд |
 | [docs/feed-panel-design.md](docs/feed-panel-design.md) | Лента контура во фрейме: проверенные факты и конструкция — метки, промт, автовход |
 | [docs/guides/dsh-plugin-setup.md](docs/guides/dsh-plugin-setup.md) | Как поднять плагин в харнессе, с граблями |
+| [docs/telegram-setup-spec.md](docs/telegram-setup-spec.md) | Подключение Telegram из интерфейса: спецификация и приёмка (реализации ещё нет) |
 | [docs/guides/plugin-playbooks/](docs/guides/plugin-playbooks/README.md) | Плейбуки для PO со скриншотами живого харнесса |
 
 ## Как устроено

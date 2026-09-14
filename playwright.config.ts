@@ -25,5 +25,9 @@ export default defineConfig({
     colorScheme: 'dark',
     locale: 'ru-RU',
     trace: 'retain-on-failure',
+    // Клик по ненайденному элементу обязан отказать, а не висеть до таймаута теста:
+    // прогон, помеченный `test.fail`, засчитывается только при настоящем отказе,
+    // «timedOut» Playwright за отказ не принимает.
+    actionTimeout: 15_000,
   },
 })
