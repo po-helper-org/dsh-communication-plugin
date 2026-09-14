@@ -17,11 +17,15 @@ test('лента открывается столбцом и фильтруетс
   await expect(pill(page, 'Все')).toHaveAttribute('data-active')
   // Автовход: профиль браузера пустой, а фрейм обязан открыть Home, а не страницу входа.
   await expect(feedFrame(page).getByRole('heading', { name: /^(Домашняя|Home)$/ })).toBeVisible({ timeout: 30_000 })
+  // Заголовок клиент рисует и из кэша service worker'а при лежащей ленте (issue #14);
+  // доказательство, что лента жива и вход выполнен, — хотя бы один пост.
+  await expect(feedFrame(page).locator('article').first()).toBeVisible({ timeout: 30_000 })
   await shot(page, S, '02-column')
 
   await pill(page, 'Продукт').click()
   await expect(pill(page, 'Продукт')).toHaveAttribute('data-active')
   await expect(feedFrame(page).getByText('#продукт', { exact: true }).first()).toBeVisible({ timeout: 30_000 })
+  await expect(feedFrame(page).locator('article').first()).toBeVisible({ timeout: 30_000 })
   await shot(page, S, '03-label', pill(page, 'Продукт'))
 
   // Пустая метка погашена, а не спрятана: видно, что фильтр есть, а постов под ним нет.
