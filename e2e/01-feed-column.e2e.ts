@@ -25,8 +25,8 @@ test('лента открывается столбцом и фильтруетс
   await shot(page, S, '03-label', pill(page, 'Продукт'))
 
   // Пустая метка погашена, а не спрятана: видно, что фильтр есть, а постов под ним нет.
-  await expect(pill(page, 'GDS')).toHaveAttribute('data-empty')
-  await shot(page, S, '04-empty', pill(page, 'GDS'))
+  await expect(pill(page, 'B2B')).toHaveAttribute('data-empty')
+  await shot(page, S, '04-empty', pill(page, 'B2B'))
 
   await column(page).getByRole('button', { name: 'Закрыть раздел' }).click()
   await expect(column(page)).toBeHidden()

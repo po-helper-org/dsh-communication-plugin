@@ -70,8 +70,9 @@ export async function openCard(page: Page): Promise<Locator> {
  * прогон проверяет поведение и картинок не производит. `highlight` обводит элемент, о
  * котором идёт речь на шаге.
  *
- * Перед снимком страница обезличивается (`redact`): фото пользователя прячется, названия
- * чужих сессий в левой панели заменяются на «Сессия». Лента во фрейме не трогается —
+ * Перед снимком страница обезличивается (`redact`): логотип сборки и фото пользователя
+ * прячутся, названия воркспейсов заменяются на `ws-1`, `ws-2`…, названия чужих сессий в
+ * левой панели — на «Сессия». Лента во фрейме не трогается —
  * кадры сценариев намеренно снимаются на срезах с постами агентов и публичных каналов;
  * перед публикацией наружу кадры смотрят глазами.
  */
@@ -101,36 +102,64 @@ export async function shot(page: Page, scenario: string, name: string, highlight
 }
 
 /**
- * Обезличивание левой панели харнесса: фото пользователя и названия сессий — не часть
- * раздела и не должны попадать в публичные кадры. Возвращает откат.
+ * Обезличивание левой панели харнесса: логотип сборки, фото пользователя, названия
+ * воркспейсов и сессий — не часть раздела и не должны попадать в публичные кадры.
+ * Возвращает откат.
  */
 async function redact(page: Page): Promise<() => Promise<void>> {
   await page.evaluate(() => {
-    const changed: Array<[HTMLElement, string]> = []
+    const changed: Array<[Node, 'style' | 'text', string]> = []
     const left = (el: Element) => el.getBoundingClientRect().right < 300
-    for (const img of document.querySelectorAll<HTMLImageElement>('img')) {
-      if (!left(img)) continue
-      changed.push([img, img.style.cssText])
-      img.style.visibility = 'hidden'
+    const hide = (el: HTMLElement | SVGElement) => {
+      changed.push([el, 'style', el.style.cssText])
+      el.style.visibility = 'hidden'
     }
-    // Строка сессии — `[role=treeitem]` с дочерней меткой времени вида «45min», «14h», «2d».
+    const setText = (node: Node, text: string) => {
+      changed.push([node, 'text', node.textContent ?? ''])
+      node.textContent = text
+    }
+    for (const img of document.querySelectorAll<HTMLImageElement>('img')) {
+      if (left(img)) hide(img)
+    }
+    // Логотип сборки — листья в левом верхнем углу, кроме кнопок (переключатель панели).
+    for (const el of document.querySelectorAll<HTMLElement | SVGElement>('body *')) {
+      const r = el.getBoundingClientRect()
+      if (r.width === 0 || r.height === 0 || r.right > 220 || r.bottom > 64) continue
+      if (el.closest('button, [role="button"]')) continue
+      const leaf = el.children.length === 0 || el instanceof SVGSVGElement
+      if (leaf && !el.closest('svg:not(:scope)')) hide(el)
+    }
+    // Строка сессии — `[role=treeitem]` с дочерней меткой времени вида «45min», «14h», «2d»;
+    // строка воркспейса — раскрываемый `[role=treeitem]` без метки времени.
+    const text = (n: Element) => n.textContent?.trim() ?? ''
+    const workspaces = new Map<string, string>()
     for (const row of document.querySelectorAll<HTMLElement>('[role="treeitem"]')) {
       if (!left(row)) continue
-      const stamp = [...row.querySelectorAll('*')].find((n) => /^\d+\s?(min|h|d|ч|м|д)$/.test(n.textContent?.trim() ?? ''))
-      if (!stamp) continue
-      const title = [...row.querySelectorAll('*')].find((n) => n !== stamp && n.children.length === 0 && (n.textContent?.trim().length ?? 0) > 3)
-      if (!title) continue
-      changed.push([title as HTMLElement, (title as HTMLElement).textContent ?? ''])
-      ;(title as HTMLElement).textContent = 'Сессия'
+      const own = [...row.querySelectorAll('*')].filter((n) => n.closest('[role="treeitem"]') === row)
+      const stamp = own.find((n) => /^\d+\s?(min|h|d|ч|м|д)$/.test(text(n)))
+      const leaves = own.filter((n) => n !== stamp && n.children.length === 0)
+      if (stamp) {
+        const title = leaves.find((n) => text(n).length > 3)
+        if (title) setText(title, 'Сессия')
+      } else if (row.hasAttribute('aria-expanded')) {
+        const title = leaves.find((n) => /\p{L}/u.test(text(n)))
+        if (title && !workspaces.has(text(title))) workspaces.set(text(title), `ws-${workspaces.size + 1}`)
+      }
     }
-    ;(window as unknown as { __commRedact?: Array<[HTMLElement, string]> }).__commRedact = changed
+    // Название воркспейса меняется везде вне фрейма, в том числе в выборе у поля ввода.
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const alias = workspaces.get(node.textContent?.trim() ?? '')
+      if (alias) setText(node, alias)
+    }
+    ;(window as unknown as { __commRedact?: typeof changed }).__commRedact = changed
   })
   return async () => {
     await page.evaluate(() => {
-      const w = window as unknown as { __commRedact?: Array<[HTMLElement, string]> }
-      for (const [el, before] of w.__commRedact ?? []) {
-        if (el instanceof HTMLImageElement) el.style.cssText = before
-        else el.textContent = before
+      const w = window as unknown as { __commRedact?: Array<[Node, 'style' | 'text', string]> }
+      for (const [node, kind, before] of (w.__commRedact ?? []).reverse()) {
+        if (kind === 'style') (node as HTMLElement).style.cssText = before
+        else node.textContent = before
       }
       delete w.__commRedact
     })
