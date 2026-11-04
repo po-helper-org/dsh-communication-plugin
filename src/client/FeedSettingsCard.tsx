@@ -37,8 +37,8 @@ const KIND_KEY: Record<RuleKind, CommunicationLocaleKey> = {
   account: 'kindAccount', tag: 'kindTag', contains: 'kindContains', regex: 'kindRegex', prompt: 'kindPrompt',
 }
 const PLACEHOLDER: Record<RuleKind, string> = {
-  account: 'product_radar', tag: 'контур_приёмка', contains: 'слово или фраза', regex: '\\bGDS\\b',
-  prompt: 'Переписка с партнёром MTS Live: созвоны, договорённости, сроки интеграции — даже если слова «Live» в тексте нет',
+  account: 'product_radar', tag: 'контур_приёмка', contains: 'слово или фраза', regex: '\\bB2B\\b',
+  prompt: 'Переписка с партнёром PartnerX Live: созвоны, договорённости, сроки интеграции — даже если слова «Live» в тексте нет',
 }
 
 function kindOf(rule: LabelRule): RuleKind {

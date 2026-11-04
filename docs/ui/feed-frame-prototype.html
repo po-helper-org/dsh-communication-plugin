@@ -643,8 +643,8 @@ const DEFAULTS = { labels: [
   { id: 'продукт', title: 'Продукт', rules: [ { account: 'product_radar' }, { account: 'problemhunt' } ] },
   { id: 'маркетинг', title: 'Маркетинг', rules: [ { contains: 'маркетинг' }, { contains: 'продвижен' } ] },
   { id: 'релизы', title: 'Релизы', rules: [ { account: 'delivery' }, { tag: 'контур_приёмка' }, { contains: 'релиз' } ] },
-  { id: 'gds', title: 'GDS', rules: [ { contains: 'GDS' } ] },
-  { id: 'live', title: 'Live', rules: [ { contains: 'MTS Live' }, { contains: 'mts.link' }, { prompt: 'Переписка с партнёром MTS Live: созвоны, договорённости, сроки интеграции — даже если слово «Live» в тексте не встречается' } ] },
+  { id: 'b2b', title: 'B2B', rules: [ { contains: 'B2B' } ] },
+  { id: 'live', title: 'Live', rules: [ { contains: 'PartnerX Live' }, { contains: 'chat.example.com' }, { prompt: 'Переписка с партнёром PartnerX Live: созвоны, договорённости, сроки интеграции — даже если слово «Live» в тексте не встречается' } ] },
   { id: 'клиенты', title: 'Клиенты', rules: [ { account: 'tg_aleks' }, { account: 'crm_harness' }, { contains: 'клиент' } ] },
 ] };
 // Подключение хранится рядом с метками: одна карточка — одна форма — одно
@@ -748,8 +748,8 @@ document.getElementById('btn-add-label').addEventListener('click', () => {
 });
 
 const PLACEHOLDER = {
-  account: 'product_radar', tag: 'контур_приёмка', contains: 'слово или фраза', regex: '\\bGDS\\b',
-  prompt: 'Переписка с партнёром MTS Live: созвоны, договорённости, сроки интеграции — даже если слова «Live» в тексте нет',
+  account: 'product_radar', tag: 'контур_приёмка', contains: 'слово или фраза', regex: '\\bB2B\\b',
+  prompt: 'Переписка с партнёром PartnerX Live: созвоны, договорённости, сроки интеграции — даже если слова «Live» в тексте нет',
 };
 function renderCard() {
   document.getElementById('f-client').value = draft.conn.clientUrl;
